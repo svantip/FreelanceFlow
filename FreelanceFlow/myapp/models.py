@@ -1,15 +1,15 @@
-from django.contrib.auth.models import User  # Import Django's built-in User model
-from django.contrib.auth.models import User  # Import Django's built-in User model
+from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+  # Import Django's built-in User model
 from django.db import models
 
-# Create your models here.
 class User(models.Model):
     ID_User = models.AutoField(primary_key=True)
     Username =models.CharField(max_length=100, unique=True)
     Email = models.EmailField(max_length=100, unique=True)
     Password = models.CharField(max_length=100)
     User_created=models.DateTimeField(auto_now_add=True)
-    
+
 # Tag model
 class Tag(models.Model):
     tag_id = models.AutoField(primary_key=True)  # Primary Key
