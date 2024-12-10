@@ -14,11 +14,18 @@ class Tag(models.Model):
     tag_id = models.AutoField(primary_key=True)  # Primary Key
     tag_name = models.CharField(max_length=100, unique=True)  # Tag Name
     tag_color = models.CharField(max_length=7, default="#ADB2BE")  # Default color
+
     def __str__(self):
         return self.tag_name
+
+
 # Project model
 class Project(models.Model):
-    PROJECT_STATUS_CHOICES = ['ongoing', 'completed']
+    PROJECT_STATUS_CHOICES = [
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+    ]
+
     id_project = models.AutoField(primary_key=True)  # Primary Key
     project_name = models.CharField(max_length=200, unique=True)  # Unique Project Name
     project_description = models.TextField(blank=True)  # Project Description
@@ -28,12 +35,22 @@ class Project(models.Model):
     project_updated = models.DateTimeField(auto_now=True)  # Auto-set update time
     tags = models.ManyToManyField(Tag, related_name="projects", blank=True)  # Many-to-Many relationship with Tags
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="projects")  # Foreign Key to User
+
     def __str__(self):
         return self.project_name
-# Task model
+   
 class Task(models.Model):
-    TASK_STATUS_CHOICES = ['ongoing', 'completed']
-    TASK_PRIORITY_CHOICES = ['high','medium','low']
+    TASK_STATUS_CHOICES = [
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+    ]
+
+    TASK_PRIORITY_CHOICES = [
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low'),
+    ]
+
     id_task = models.AutoField(primary_key=True)  # Primary Key
     task_name = models.CharField(max_length=200)  # Task Name
     task_description = models.TextField(blank=True)  # Task Description
@@ -43,5 +60,6 @@ class Task(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")  # Foreign Key to Project
     task_created = models.DateTimeField(auto_now_add=True)  # Auto-set creation time
     task_updated = models.DateTimeField(auto_now=True)  # Auto-set update time
+
     def __str__(self):
         return self.task_name
