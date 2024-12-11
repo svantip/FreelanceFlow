@@ -3,6 +3,9 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
+<p>Welcome, {{ user.username }}!</p>
+
+<h1>home radi</h1>
 {% if user.is_authenticated %}
 Hi {{ user.username }}!
 {% else %}

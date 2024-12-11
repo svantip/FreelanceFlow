@@ -7,11 +7,20 @@
 </head>
 
 <body>
-    <h1>dela</h1>
-  <main>
-    {% block content %}
-    {% endblock %}
-  </main>
-</body>
 
+  <h1>base radi</h1>
+  <p>Welcome, {{ user.username }}!</p>
+
+  {% if is_authenticated %}
+  <p>Welcome, {{ username }}!</p>
+  <a href="{% url 'myapp:logout' %}">Logout</a>
+{% else %}
+  <p>You are not logged in.</p>
+  <a href="{% url 'myapp:login' %}">Login</a>
+{% endif %}
+<main>
+  {% block content %}
+  {% endblock %}
+</main>
+</body>
 </html>
