@@ -1,14 +1,14 @@
-from django.urls import path , include
+from django.contrib.auth import views as auth_views
+from django.urls import path
+
 from . import views
-from django.contrib import admin
-from django.views.generic.base import TemplateView  # new
-from .views import *
-app_name = 'myapp'  # here for namespacing of urls.
+
+app_name = 'myapp'
 
 urlpatterns = [
-    path('login/', login_view, name='login'),
-    path('', home_view, name='home'),
-    path('logout/', logout_view, name='logout'),
-    path('register/', register_view, name='register'),
-
+    path('', views.home_view, name='home'),  # Home page
+    path('login/', views.login_view, name='login'),  # Login page
+    path('logout/', auth_views.LogoutView.as_view(),
+         name='logout'),  # Logout page
+    path('register/', views.register_view, name='register'),  # Register page
 ]

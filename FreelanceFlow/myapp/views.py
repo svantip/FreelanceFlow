@@ -1,65 +1,57 @@
-from django.shortcuts import render , redirect
-from django.http import HttpResponse
-from .forms import *
-from .models import *
 from django.contrib import messages
-from django.contrib.auth.hashers import check_password  # Import za proveru heširane lozinke
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
 
-## Create your views here.
-def index(request):
-    return render(request, 'index.html')
+from .forms import LoginForm, RegistrationForm
 
+
+@login_required
 def home_view(request):
     """
-    Prikazuje početnu stranicu i proverava da li je korisnik prijavljen.
+    Display the home page for logged-in users.
     """
-    context = {
-        'is_authenticated': request.user.is_authenticated,
-        'username': request.user.username if request.user.is_authenticated else None
-    }
-    return render(request, 'base.html', context)
+    return render(request, 'home.html')
+
+
 def login_view(request):
+    """
+    Handle user login functionality.
+    """
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
 
-            # Pokušaj da pronađeš korisnika sa tim username-om
-            try:
-                user = User.objects.get(Username=username)
-            except User.DoesNotExist:
-                messages.error(request, "Invalid username or password!")
-                return redirect('myapp:login')
-
-            # Provera lozinke sa heširanjem
-            if check_password(password, user.Password):  # Koristi check_password da proveriš lozinku
-                # Ako je lozinka ispravna, kreiraj sesiju za korisnika
-                request.session['user_id'] = user.ID_User
-                messages.success(request, f"Welcome, {username}!")
-                return redirect('myapp:home')  # Zameni 'home' sa tvojim URL-om
+            # Authenticate the user
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f"Welcome back, {username}!")
+                # Redirect to home after successful login
+                return redirect('myapp:home')
             else:
-                messages.error(request, "Invalid username or password!")
-                return redirect('myapp:login')  # Ponovo prikazivanje login stranice
+                messages.error(request, "Invalid username or password.")
     else:
         form = LoginForm()
 
-    return render(request, 'registration/login.html', {'form': form})
-def logout_view(request):
-    request.session.flush()  # Briše sve podatke iz sesije
-    messages.success(request, "Logged out successfully!")
-    return redirect('login')  # Zameni 'login' sa tvojim URL-om za prijavu
+    return render(request, 'authentication/login.html', {'form': form})
 
 
 def register_view(request):
+    """
+    Handle user registration functionality.
+    """
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Registration successful! You can now log in.")
-            return redirect('home')  # Zameni 'login' sa tvojim URL-om za prijavu
+            form.save()  # Save the new user
+            messages.success(
+                request, "Registration successful! You can now log in.")
+            # Redirect to login after registration
+            return redirect('myapp:login')
     else:
         form = RegistrationForm()
 
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, 'authentication/register.html', {'form': form})

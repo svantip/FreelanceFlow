@@ -1,4 +1,10 @@
-from django.contrib import admin
-from .models import *
 # Register your models here.
-admin.site.register(User)
+from django.contrib import admin
+
+from .models import *
+from .models import Project, Tag, Task
+
+# Register your models here.
+admin.site.register(Tag)
+admin.site.register(Project)
+admin.site.register(Task)

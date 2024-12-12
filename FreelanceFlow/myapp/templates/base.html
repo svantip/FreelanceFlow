@@ -1,26 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Site Title{% endblock %}</title>
+  </head>
+  <body>
+    <header>
+      <h1>Welcome to the Site!</h1>
+      <nav>
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'myapp:logout' %}" style="display: inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-link">Logout</button>
+        </form>
 
-<head>
-  <meta charset="utf-8">
-  <title>{% block title %}Django Auth Tutorial{% endblock %}</title>
-</head>
-
-<body>
-
-  <h1>base radi</h1>
-  <p>Welcome, {{ user.username }}!</p>
-
-  {% if is_authenticated %}
-  <p>Welcome, {{ username }}!</p>
-  <a href="{% url 'myapp:logout' %}">Logout</a>
-{% else %}
-  <p>You are not logged in.</p>
-  <a href="{% url 'myapp:login' %}">Login</a>
-{% endif %}
-<main>
-  {% block content %}
-  {% endblock %}
-</main>
-</body>
+        {% else %}
+        <a href="{% url 'myapp:login' %}">Login</a>
+        <a href="{% url 'myapp:register' %}">Register</a>
+        {% endif %}
+      </nav>
+    </header>
+    <main>
+      {% block content %}
+      <!-- Content goes here -->
+      {% endblock content %}
+    </main>
+  </body>
 </html>
