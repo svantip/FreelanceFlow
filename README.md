@@ -2,10 +2,28 @@
 
 
 ## Koraci za pokretanje projekta
-### Kloniranje
+### Git
 ```
+# Setup
 git clone https://github.com/svantip/FreelanceFlow/
 cd FreelanceFlow
+git checkout [svan/deni]-branch
+git branch
+# Sinkroniziranje promjena sa brancha ili maina
+git pull origin main
+
+# Commitanje
+git add file1 file2
+git commit -m "Description of what you changed"
+git push origin [svan/deni]-branch
+
+# Merganje
+git pull origin main
+git merge main
+
+# Konflikti
+git add resolved-file
+git rebase --continue
 ```
 ### Postavljanje virtualnog okruzenja
 ```
