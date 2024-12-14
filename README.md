@@ -1,7 +1,40 @@
 # FreelanceFlow
 
+
+## Koraci za pokretanje projekta
+### Kloniranje
+```
+git clone https://github.com/svantip/FreelanceFlow/
+cd FreelanceFlow
+```
+### Postavljanje virtualnog okruzenja
+```
+# Windows:
+python -m venv venv
+venv\Scripts\activate
+
+# macOS/Linux:
+python3 -m venv venv
+source venv/bin/activate
+```
+### Instaliranje python zavbbisnosti
+```
+pip install -r requirements.txt
+```
+### Prvi terminal - hot reload
+```
+python manage.py tailwind build
+python manage.py tailwind start
+```
+### Drugi terminal - django server
+```
+python manage.py runserver
+```
+
 ## Additional Requirements
 - Tailwind CSS (`npm install tailwindcss`)
+
+
 
 ## Faze
 1. **faza**: Korisnik može kreirati, uređivati, brisati i pregledavati projekte i zadatke. Također, može se registrirati i prijaviti u sustav. Sustav se sastoji od web poslužitelja i relacijske baze podataka.
