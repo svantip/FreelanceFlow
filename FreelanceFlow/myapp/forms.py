@@ -7,25 +7,59 @@ from .models import User
 class LoginForm(forms.Form):
     username = forms.CharField(
         max_length=100,
-        label="Username",
         widget=forms.TextInput(
-            attrs={'class': 'form-control', 'placeholder': 'Enter your username'})
+            attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Username'
+            }
+        )
     )
     password = forms.CharField(
-        label="Password",
         widget=forms.PasswordInput(
-            attrs={'class': 'form-control', 'placeholder': 'Enter your password'})
+            attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Password'
+            }
+        )
     )
 
 
 class RegistrationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput, label="Password")
+    username = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Username'
+            }
+        )
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(
+            attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Email'
+            }
+        )
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Password'
+            }
+        )
+    )
     confirm_password = forms.CharField(
-        widget=forms.PasswordInput, label="Confirm Password")
+        widget=forms.PasswordInput(
+            attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Confirm Password'
+            }
+        )
+    )
 
     class Meta:
         model = User
-        # Ensure these fields match your User model
         fields = ['username', 'email', 'password']
 
     def clean(self):

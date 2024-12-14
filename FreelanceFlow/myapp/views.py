@@ -29,14 +29,18 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {username}!")
-                # Redirect to home after successful login
                 return redirect('myapp:home')
             else:
-                messages.error(request, "Invalid username or password.")
+                # Add a non-field error for invalid credentials
+                form.add_error(None, "Invalid username or password.")
+        else:
+            # Log form errors for debugging purposes
+            print("Form errors:", form.errors)
     else:
         form = LoginForm()
 
     return render(request, 'authentication/login.html', {'form': form})
+
 
 
 def register_view(request):
@@ -48,9 +52,12 @@ def register_view(request):
         if form.is_valid():
             form.save()  # Save the new user
             messages.success(
-                request, "Registration successful! You can now log in.")
+                request, "Registration successful! You can now log in."
+            )
             # Redirect to login after registration
             return redirect('myapp:login')
+        else:
+            print(form.errors)  # Debugging: Print errors in the console
     else:
         form = RegistrationForm()
 

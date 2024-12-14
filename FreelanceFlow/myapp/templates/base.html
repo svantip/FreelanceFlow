@@ -1,26 +1,13 @@
+{% load static tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Site Title{% endblock %}</title>
+    {% tailwind_css %}
   </head>
-  <body>
-    <header>
-      <h1>Welcome to the Site!</h1>
-      <nav>
-        {% if user.is_authenticated %}
-        <form method="post" action="{% url 'myapp:logout' %}" style="display: inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-link">Logout</button>
-        </form>
-
-        {% else %}
-        <a href="{% url 'myapp:login' %}">Login</a>
-        <a href="{% url 'myapp:register' %}">Register</a>
-        {% endif %}
-      </nav>
-    </header>
+  <body style="w-screen h-screen">
     <main>
       {% block content %}
       <!-- Content goes here -->

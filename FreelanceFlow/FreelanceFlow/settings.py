@@ -1,4 +1,5 @@
 from pathlib import Path
+from shutil import which
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,6 +17,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_browser_reload',
+    'tailwind',
+    'theme',
     'myapp',  # Custom app
 ]
 
@@ -28,6 +32,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
 
 ROOT_URLCONF = 'FreelanceFlow.urls'
@@ -59,6 +64,10 @@ DATABASES = {
     }
 }
 
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -83,3 +92,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'  # Redirect to the login page defined in your app
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# Tailwind config
+TAILWIND_APP_NAME = 'theme'
+NPM_BIN_PATH = which("npm")
