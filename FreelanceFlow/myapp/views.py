@@ -2,16 +2,25 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from .models import *
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
+from django.contrib import messages
+from .models import Project
+from .forms import *
 
 from .forms import LoginForm, RegistrationForm
 
 
 @login_required
 def home_view(request):
-    """
-    Display the home page for logged-in users.
-    """
-    return render(request, 'home.html')
+    user = request.user
+    # Fetch projects where the user is the owner or a viewer
+    projects = Project.objects.filter(
+        owner=user) | Project.objects.filter(viewers=user)
+    context = {"projects": projects}
+    return render(request, "home.html", context)
 
 
 def login_view(request):
@@ -42,7 +51,6 @@ def login_view(request):
     return render(request, 'authentication/login.html', {'form': form})
 
 
-
 def register_view(request):
     """
     Handle user registration functionality.
@@ -62,3 +70,170 @@ def register_view(request):
         form = RegistrationForm()
 
     return render(request, 'authentication/register.html', {'form': form})
+
+
+@login_required
+def edit_project(request, pk):
+    """
+    Handle editing of a project by its owner.
+    Only the owner of the project can edit it.
+    """
+    project = get_object_or_404(Project, pk=pk)
+
+    # Ensure the logged-in user is the owner of the project
+    if project.owner != request.user:
+        return HttpResponseForbidden("You do not have permission to edit this project.")
+
+    if request.method == "POST":
+        form = EditProjectForm(request.POST, instance=project)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Project updated successfully!")
+            # Redirect to the home page after saving
+            return redirect('myapp:home')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = EditProjectForm(instance=project)
+    context = {"form": form, "project": project}
+    return render(request, "projects/edit_project.html", context)
+
+
+@login_required
+def create_project(request):
+    """
+    Handle creating a new project by the logged-in user.
+    """
+    if request.method == "POST":
+        form = CreateProjectForm(request.POST)
+        if form.is_valid():
+            # Save the form with the logged-in user as the owner
+            project = form.save(commit=False)
+            project.owner = request.user
+            project.save()
+            form.save_m2m()  # Save many-to-many data (tags)
+            messages.success(request, "Project created successfully!")
+            return redirect('myapp:home')  # Redirect to the home page
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = CreateProjectForm()
+
+    context = {"form": form}
+    return render(request, "projects/create_project.html", context)
+
+
+@login_required
+def delete_project(request):
+    # Get the project_id from the query string
+    project_id = request.GET.get('id')
+    if not project_id:
+        messages.error(request, "Project ID is missing.")
+        return redirect('myapp:home')
+
+    # Query using project_id (the correct field name)
+    project = get_object_or_404(Project, project_id=project_id)
+
+    # Ensure only the owner can delete the project
+    if project.owner != request.user:
+        return HttpResponseForbidden("You don't have permission to delete this project.")
+
+    project.delete()
+    messages.success(request, "Project deleted successfully!")
+    return redirect('myapp:home')
+
+
+@login_required
+def project_details(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+
+    # Ensure the user has access to the project
+    if request.user != project.owner and request.user not in project.viewers.all():
+        # Return 403 forbidden page if unauthorized
+        return render(request, "403.html", status=403)
+
+    tasks = project.tasks.all()
+    users = project.viewers.all()  # Users who have access
+
+    context = {
+        'project': project,
+        'tasks': tasks,
+        'users': users,
+    }
+    return render(request, 'projects/project_details.html', context)
+
+
+login_required
+
+
+def create_task(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+
+    if request.method == "POST":
+        form = CreateTaskForm(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.project = project
+            task.save()
+            messages.success(request, "Task created successfully!")
+            return redirect('myapp:project_details', pk=project_id)
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = CreateTaskForm()
+
+    return render(request, 'tasks/create_task.html', {'form': form, 'project': project})
+
+
+@login_required
+def edit_task(request, task_id):
+    """
+    View to edit an existing task.
+    """
+    task = get_object_or_404(Task, pk=task_id)
+    project = task.project
+
+    # Check if the user has permission to edit tasks in this project
+    if request.user != project.owner and request.user not in project.viewers.all():
+        messages.error(
+            request, "You do not have permission to edit this task.")
+        return redirect("myapp:project_details", pk=project.project_id)
+
+    if request.method == "POST":
+        form = EditTaskForm(request.POST, instance=task)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Task updated successfully!")
+            return redirect("myapp:project_details", pk=project.project_id)
+        else:
+            messages.error(
+                request, "There was an error updating the task. Please try again.")
+    else:
+        form = EditTaskForm(instance=task)
+
+    context = {
+        "form": form,
+        "task": task,
+        "project": project,
+    }
+    return render(request, "projects/edit_task.html", context)
+
+
+@login_required
+def delete_task(request, task_id):
+    """
+    Handle the deletion of a task.
+    Only the owner of the associated project can delete the task.
+    """
+    # Fetch the task by its ID
+    task = get_object_or_404(Task, task_id=task_id)
+
+    # Check if the logged-in user is the owner of the associated project
+    if task.project.owner != request.user:
+        return HttpResponseForbidden("You do not have permission to delete this task.")
+
+    # Delete the task
+    task.delete()
+    messages.success(request, "Task deleted successfully!")
+    # Redirect to the project's details page or any other appropriate page
+    return redirect('myapp:project_details', pk=task.project.project_id)

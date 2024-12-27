@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.project_name }}{% endblock %}
+
+{% block content %}
+<div class="w-screen h-screen bg-gray-100">
+  <!-- Top-right navigation -->
+  <div class="absolute top-4 right-4">
+    {% if user.is_authenticated %}
+    <p class="inline text-gray-800">Hello, {{ user.username }}!</p>
+    <a href="{% url 'myapp:login' %}" class="ml-4 text-blue-500 hover:underline"> Logout </a>
+    {% else %}
+    <a href="{% url 'myapp:login' %}" class="text-blue-500 hover:underline"> Login </a>
+    <a href="{% url 'myapp:register' %}" class="ml-4 text-blue-500 hover:underline"> Register </a>
+    {% endif %}
+  </div>
+
+  <!-- Main content -->
+  <div class="p-8">
+    {% if user.is_authenticated %}
+    <div class="flex flex-row h-auto items-center space-x-2">
+        <a
+            href="#"
+            class="text-blue-500 hover:underline"
+            onclick="event.preventDefault(); window.history.back();"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="back-arrow">
+                <path fill="none" d="M0 0h24v24H0V0z" opacity=".87"></path>
+                <path d="M16.62 2.99c-.49-.49-1.28-.49-1.77 0L6.54 11.3c-.39.39-.39 1.02 0 1.41l8.31 8.31c.49.49 1.28.49 1.77 0s.49-1.28 0-1.77L9.38 12l7.25-7.25c.48-.48.48-1.28-.01-1.76z"></path>
+            </svg>
+        </a>
+        <h1 class="text-xl font-bold">{{ project.project_name }}'s tasks</h1>
+    </div>
+    <!-- Create Task button -->
+    <div class="mb-6 flex justify-end">
+      <a
+        href="{% url 'myapp:create_task' project.project_id %}"
+        class="flex items-center bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-700"
+        title="Create New Task"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path
+            d="M12 4a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H5a1 1 0 110-2h6V5a1 1 0 011-1z"
+          />
+        </svg>
+      </a>
+    </div>
+
+    <!-- Users with Access -->
+    <h2 class="text-lg font-semibold mb-4">Users with Access</h2>
+    <div class="flex space-x-4 mb-8">
+      {% for user in users %}
+      <div class="p-2 bg-gray-100 rounded-lg shadow text-center">
+        <p class="text-gray-700">{{ user.username }}</p>
+      </div>
+      {% empty %}
+      <p class="text-gray-500">No other users have access to this project.</p>
+      {% endfor %}
+    </div>
+
+    <!-- List of Tasks -->
+    <h2 class="text-lg font-semibold mb-4">Tasks</h2>
+    {% if tasks %}
+    <ul class="space-y-4">
+      {% for task in tasks %}
+      <li class="p-4 bg-white border rounded-2xl shadow">
+        <h3 class="text-lg font-semibold">{{ task.task_name }}</h3>
+        <p class="text-gray-600">{{ task.task_description }}</p>
+        <p class="text-sm text-gray-500">Deadline: {{ task.task_deadline|date:"Y-m-d H:i" }}</p>
+        <p class="text-sm text-gray-500">Status: {{ task.get_task_status_display }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-700">No tasks found for this project.</p>
+    {% endif %}
+    {% else %}
+    <h1 class="text-xl font-bold">Please log in to access the project details.</h1>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
