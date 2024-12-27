@@ -1,6 +1,5 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
-
 from . import views
 
 app_name = 'myapp'
@@ -11,4 +10,17 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(),
          name='logout'),  # Logout page
     path('register/', views.register_view, name='register'),  # Register page
+    path('projects/<int:pk>/edit/', views.edit_project,
+         name='edit_project'),  # Edit project
+    path('projects/create/', views.create_project,
+         name='create_project'),  # Create project
+    path('projects/delete/', views.delete_project,
+         name='delete_project'),  # Delete project
+    path('projects/<int:pk>/', views.project_details,
+         name='project_details'),  # Project details
+    path('tasks/create/<int:project_id>/', views.create_task,
+         name='create_task'),  # Create task,
+    path('tasks/<int:pk>/edit', views.edit_task, name='edit_task'),  # Edit task
+    path('tasks/delete/', views.delete_task,
+         name="delete_task"),  # Delete task
 ]
