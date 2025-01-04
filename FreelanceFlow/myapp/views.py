@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -5,7 +6,7 @@ from django.shortcuts import redirect, render
 from .models import *
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.contrib import messages
 from .models import Project
 from .forms import *
@@ -163,9 +164,7 @@ def project_details(request, pk):
     return render(request, 'projects/project_details.html', context)
 
 
-login_required
-
-
+@login_required
 def create_task(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
 
@@ -237,3 +236,43 @@ def delete_task(request, task_id):
     messages.success(request, "Task deleted successfully!")
     # Redirect to the project's details page or any other appropriate page
     return redirect('myapp:project_details', pk=task.project.project_id)
+
+
+@login_required
+def add_user_to_project(request, project_id):
+    if request.method == "POST":
+        try:
+            # Parse JSON body
+            data = json.loads(request.body)
+            # Strip leading/trailing spaces
+            email = data.get("email", "").strip()
+            print(f"Email received: {email}")
+
+            if not email:
+                return JsonResponse({"error": "Email is required."}, status=400)
+
+            # Debug: Check if email exists in the database
+            users = User.objects.filter(email__iexact=email)
+            print(f"Users found: {users}")
+
+            if not users.exists():
+                return JsonResponse({"error": "User not found."}, status=404)
+
+            user = users.first()
+            print(f"User selected: {user}")
+
+            # Use correct field for project lookup
+            project = get_object_or_404(Project, project_id=project_id)
+            print(f"Project: {project}")
+
+            # Add user to project viewers
+            project.viewers.add(user)
+            return JsonResponse({"success": True, "message": f"User {user.username} added successfully."}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data."}, status=400)
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)
