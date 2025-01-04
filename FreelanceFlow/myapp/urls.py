@@ -23,4 +23,6 @@ urlpatterns = [
     path('tasks/<int:pk>/edit', views.edit_task, name='edit_task'),  # Edit task
     path('tasks/delete/', views.delete_task,
          name="delete_task"),  # Delete task
+    path('projects/<int:project_id>/add-user/',
+         views.add_user_to_project, name='add_user_to_project'),
 ]

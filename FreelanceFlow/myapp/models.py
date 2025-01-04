@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -11,6 +12,10 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.tag_name
+
+    def clean(self):
+        if not re.match(r'^#[A-Fa-f0-9]{6}$', self.tag_color):
+            raise ValueError("tag_color must be a valid hex color code.")
 
 
 class Project(models.Model):
@@ -40,6 +45,20 @@ class Project(models.Model):
     def __str__(self):
         return self.project_name
 
+    @classmethod
+    def get_projects_by_status(cls, status):
+        return cls.objects.filter(project_status=status)
+
+    def calculate_progress(self):
+        total_tasks = self.tasks.count()
+        completed_tasks = self.tasks.filter(task_status="completed").count()
+        return (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
+
+    def clean(self):
+        from django.utils.timezone import now
+        if self.project_deadline < now():
+            raise ValueError("Project deadline must be in the future.")
+
 
 class Task(models.Model):
     task_id = models.BigAutoField(primary_key=True)
@@ -67,3 +86,12 @@ class Task(models.Model):
 
     def __str__(self):
         return self.task_name
+
+    def clean(self):
+        if self.task_deadline > self.project.project_deadline:
+            raise ValueError(
+                "Task deadline cannot exceed the project's deadline.")
+
+    @classmethod
+    def get_tasks_by_priority(cls, priority):
+        return cls.objects.filter(task_priority=priority)
