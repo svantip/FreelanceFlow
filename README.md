@@ -39,6 +39,13 @@ source venv/bin/activate
 ```
 pip install -r requirements.txt
 ```
+### Instaliranje node.js za visnosti
+```
+npm install
+
+cd theme/static_src
+npm install
+```
 ### Prvi terminal - hot reload
 ```
 python manage.py tailwind build
