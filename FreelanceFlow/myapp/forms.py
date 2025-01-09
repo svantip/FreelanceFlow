@@ -184,16 +184,14 @@ class CreateTaskForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Expect the project instance to be passed
         self.project = kwargs.pop('project', None)
-        super().__init__(*args, **kwargs)
+        super(CreateTaskForm, self).__init__(*args, **kwargs)
 
     def clean_task_deadline(self):
         task_deadline = self.cleaned_data.get('task_deadline')
-        if self.project and task_deadline and task_deadline > self.project.project_deadline:
+        if self.project and task_deadline > self.project.project_deadline:
             raise forms.ValidationError(
-                "Task deadline cannot be later than the project's deadline."
-            )
+                "Task deadline cannot be later than the project's deadline.")
         return task_deadline
 
 

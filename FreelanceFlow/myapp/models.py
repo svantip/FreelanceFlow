@@ -1,6 +1,7 @@
 import re
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -86,11 +87,6 @@ class Task(models.Model):
 
     def __str__(self):
         return self.task_name
-
-    def clean(self):
-        if self.task_deadline > self.project.project_deadline:
-            raise ValueError(
-                "Task deadline cannot exceed the project's deadline.")
 
     @classmethod
     def get_tasks_by_priority(cls, priority):

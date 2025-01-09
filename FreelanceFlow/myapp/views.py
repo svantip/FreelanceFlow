@@ -10,6 +10,8 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.contrib import messages
 from .models import Project
 from .forms import *
+from django.core.exceptions import ValidationError
+
 
 from .forms import LoginForm, RegistrationForm
 
@@ -169,17 +171,17 @@ def create_task(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
 
     if request.method == "POST":
-        form = CreateTaskForm(request.POST)
+        form = CreateTaskForm(request.POST, project=project)
         if form.is_valid():
             task = form.save(commit=False)
-            task.project = project
+            task.project = project  # Ensure this is set before saving
             task.save()
             messages.success(request, "Task created successfully!")
             return redirect('myapp:project_details', pk=project_id)
         else:
             messages.error(request, "Please correct the errors below.")
     else:
-        form = CreateTaskForm()
+        form = CreateTaskForm(project=project)
 
     return render(request, 'tasks/create_task.html', {'form': form, 'project': project})
 
