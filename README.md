@@ -39,7 +39,7 @@ source venv/bin/activate
 ```
 pip install -r requirements.txt
 ```
-### Instaliranje node.js za visnosti
+### Instaliranje node.js zavisnosti
 ```
 npm install
 
