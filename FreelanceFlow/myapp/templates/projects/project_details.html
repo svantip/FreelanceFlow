@@ -7,12 +7,10 @@
 <div class="w-screen h-screen bg-gray-100">
   <!-- Top-left logo and Top-right navigation -->
   <div class="flex justify-between items-center p-8">
-    <!-- Top-left logo -->
     <a href="{% url 'myapp:home' %}" class="flex items-center">
       <img src="{% static 'images/FF.svg' %}" alt="FreelanceFlow Logo" class="h-10 w-auto">
       <span class="ml-2 text-xl font-bold text-gray-800">FreelanceFlow</span>
     </a>
-    <!-- Top-right navigation -->
     <div>
       {% if user.is_authenticated %}
       <p class="inline text-gray-800">Hello, {{ user.username }}!</p>
@@ -21,8 +19,8 @@
         <button type="submit" class="ml-4 text-blue-500 hover:underline">Logout</button>
       </form>
       {% else %}
-      <a href="{% url 'myapp:login' %}" class="text-blue-500 hover:underline"> Login </a>
-      <a href="{% url 'myapp:register' %}" class="ml-4 text-blue-500 hover:underline"> Register </a>
+      <a href="{% url 'myapp:login' %}" class="text-blue-500 hover:underline">Login</a>
+      <a href="{% url 'myapp:register' %}" class="ml-4 text-blue-500 hover:underline">Register</a>
       {% endif %}
     </div>
   </div>
@@ -30,7 +28,6 @@
   <!-- Main content -->
   <div class="p-8">
     {% if user.is_authenticated %}
-    <!-- Back button and Project Title -->
     <div class="flex flex-row h-auto items-center space-x-2">
       <a href="{% url 'myapp:home' %}">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -43,20 +40,27 @@
       <h1 class="text-xl font-bold">{{ project.project_name }}</h1>
     </div>
 
-    <!-- Responsive Layout -->
     <div class="flex flex-col lg:flex-row lg:space-x-8 mt-6">
       <!-- Left Column: Tasks -->
       <div class="flex-1">
-        <!-- Task List -->
         <h2 class="text-lg font-semibold mb-4">{{ project.project_name }}'s tasks</h2>
         {% if tasks %}
         <ul class="space-y-4">
           {% for task in tasks %}
-          <li class="p-4 bg-white border rounded-3xl shadow">
-            <h3 class="text-lg font-semibold">{{ task.task_name }}</h3>
-            <p class="text-gray-600">{{ task.task_description }}</p>
-            <p class="text-sm text-gray-500">Deadline: {{ task.task_deadline|date:"Y-m-d H:i" }}</p>
-            <p class="text-sm text-gray-500">Status: {{ task.get_task_status_display }}</p>
+          <li class="p-4 bg-white border rounded-3xl shadow flex justify-between items-center">
+            <div>
+              <h3 class="text-lg font-semibold">{{ task.task_name }}</h3>
+              <p class="text-gray-600">{{ task.task_description }}</p>
+              <p class="text-sm text-gray-500">Deadline: {{ task.task_deadline|date:"Y-m-d H:i" }}</p>
+              <p class="text-sm text-gray-500">Status: {{ task.get_task_status_display }}</p>
+            </div>
+            <div>
+              <input
+                type="checkbox"
+                data-task-id="{{ task.task_id }}"
+                {% if task.task_status == 'completed' %}checked{% endif %}
+                class="task-status-checkbox">
+            </div>
           </li>
           {% endfor %}
         </ul>
@@ -67,16 +71,7 @@
 
       <!-- Right Column: Users with Access -->
       <div class="lg:w-1/3">
-        <div class="flex flex-row justify-between items-center">
-          <h2 class="text-lg font-semibold lg:mb-4 mt-5 lg:mt-0">Users with Access</h2>
-          <a class="ml-4 cursor-pointer" id="add-user-button">
-            <svg class="w-6 h-6 text-gray-800" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" d="M9 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4H7Zm8-1a1 1 0 0 1 1-1h1v-1a1 1 0 1 1 2 0v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1h-1a1 1 0 0 1-1-1Z" clip-rule="evenodd" />
-            </svg>
-          </a>
-        </div>
-
-        <!-- User List -->
+        <h2 class="text-lg font-semibold lg:mb-4 mt-5 lg:mt-0">Users with Access</h2>
         <div class="space-y-4">
           {% for user in users %}
           <div class="p-2 bg-gray-100 rounded-lg shadow text-center">
@@ -89,7 +84,6 @@
       </div>
     </div>
 
-    <!-- Create Task Button -->
     <div class="absolute bottom-0 right-0 m-5">
       <a href="{% url 'myapp:create_task' project.project_id %}" class="flex items-center bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-700" title="Create New Task">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" viewBox="0 0 24 24" fill="currentColor">
@@ -105,55 +99,39 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const addUserButton = document.getElementById("add-user-button");
-    const modal = document.getElementById("add-user-modal");
-    const cancelButton = document.getElementById("cancel-button");
-    const addUserForm = document.getElementById("add-user-form");
-
-    // Show Modal
-    addUserButton.addEventListener("click", () => {
-        modal.classList.remove("hidden");
-    });
-
-    // Hide Modal
-    cancelButton.addEventListener("click", () => {
-        modal.classList.add("hidden");
-    });
-
-    // Submit Form
-    addUserForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const email = document.getElementById("user-email").value.trim();
-        if (!email) {
-            alert("Please enter a valid email address.");
-            return;
-        }
-
+    const checkboxes = document.querySelectorAll(".task-status-checkbox");
+  
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", async (e) => {
+        const taskId = e.target.getAttribute("data-task-id");
+        const newStatus = e.target.checked ? "completed" : "ongoing";
+  
         try {
-            const response = await fetch("{% url 'myapp:add_user_to_project' project.project_id %}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}",
-                },
-                body: JSON.stringify({ email }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                alert(data.message || "User added successfully!");
-                modal.classList.add("hidden");
-                location.reload();
-            } else {
-                const errorData = await response.json();
-                alert(errorData.error || "An error occurred while adding the user.");
-            }
+          const response = await fetch(`/update_task_status/${taskId}/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: JSON.stringify({ status: newStatus }),
+          });
+  
+          const data = await response.json();
+          if (!response.ok) {
+            console.error("Server error:", data.error);
+            alert(data.error || "An error occurred.");
+            e.target.checked = !e.target.checked; // Revert change on error
+          } else {
+            console.log("Success:", data.message);
+          }
         } catch (error) {
-            console.error("Error:", error);
-            alert("An unexpected error occurred. Please try again.");
+          console.error("Error:", error);
+          alert("An unexpected error occurred.");
+          e.target.checked = !e.target.checked; // Revert change on error
         }
+      });
     });
-});
+  });
+  
 </script>
 {% endblock %}
