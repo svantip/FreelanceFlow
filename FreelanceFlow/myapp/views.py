@@ -281,6 +281,7 @@ def add_user_to_project(request, project_id):
     return JsonResponse({"error": "Invalid request method."}, status=405)
 
 @csrf_exempt
+@login_required
 def update_task_status(request, task_id):
     if request.method == "POST":
         try:
@@ -300,3 +301,15 @@ def update_task_status(request, task_id):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
     return JsonResponse({"error": "Invalid request method"}, status=405)
+@login_required
+def delete_task(request, task_id):
+    if request.method == "POST" and request.user.is_authenticated:
+        try:
+            task = get_object_or_404(Task, pk=task_id)
+            task.delete()
+            return JsonResponse({"message": "Task deleted successfully!"})
+        except Task.DoesNotExist:
+            return JsonResponse({"error": "Task not found"}, status=404)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+

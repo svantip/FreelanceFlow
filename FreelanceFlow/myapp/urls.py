@@ -2,6 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 from . import views
 
+
 app_name = 'myapp'
 
 urlpatterns = [
@@ -27,6 +28,8 @@ urlpatterns = [
          views.add_user_to_project, name='add_user_to_project'),
      path('update_task_status/<int:task_id>/', views.update_task_status, 
           name='update_task_status'),
+    path('delete_task/<int:task_id>/',
+          views.delete_task, name='delete_task'),
 
 
 ]
