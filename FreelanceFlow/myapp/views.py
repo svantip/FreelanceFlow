@@ -10,11 +10,12 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.contrib import messages
 from .models import Project
 from .forms import *
+from django.views import View
 from django.core.exceptions import ValidationError
-
-
+from django.views.decorators.csrf import csrf_exempt
 from .forms import LoginForm, RegistrationForm
-
+import logging
+logger = logging.getLogger(__name__)
 
 @login_required
 def home_view(request):
@@ -278,3 +279,37 @@ def add_user_to_project(request, project_id):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
+
+@csrf_exempt
+@login_required
+def update_task_status(request, task_id):
+    if request.method == "POST":
+        try:
+            logger.info(request.body)  # Log the incoming request body
+            data = json.loads(request.body)
+            new_status = data.get("status")
+            
+            if new_status not in dict(Task.TASK_STATUS_CHOICES):
+                return JsonResponse({"error": "Invalid status"}, status=400)
+
+            task = get_object_or_404(Task, pk=task_id)
+            task.task_status = new_status
+            task.save()
+            return JsonResponse({"message": "Task status updated successfully!"})
+        except Task.DoesNotExist:
+            return JsonResponse({"error": "Task not found"}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+@login_required
+def delete_task(request, task_id):
+    if request.method == "POST" and request.user.is_authenticated:
+        try:
+            task = get_object_or_404(Task, pk=task_id)
+            task.delete()
+            return JsonResponse({"message": "Task deleted successfully!"})
+        except Task.DoesNotExist:
+            return JsonResponse({"error": "Task not found"}, status=404)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
