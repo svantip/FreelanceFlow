@@ -162,7 +162,7 @@ class CreateTaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['task_name', 'task_description',
-                  'task_status', 'task_deadline']
+                  'task_status', 'task_priority', 'task_deadline']
         widgets = {
             'task_name': forms.TextInput(attrs={
                 'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
@@ -174,6 +174,9 @@ class CreateTaskForm(forms.ModelForm):
                 'placeholder': 'Task Description',
             }),
             'task_status': forms.Select(attrs={
+                'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
+            'task_priority': forms.Select(attrs={
                 'class': 'block w-full rounded-lg border-gray-300 shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500',
             }),
             'task_deadline': forms.DateTimeInput(attrs={

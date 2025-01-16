@@ -36,11 +36,20 @@
           {% endif %}
         </div>
 
+        <!-- Task Priority Field -->
+        <div>
+          <p>Task priority: </p>
+          {{ form.task_priority }}
+          {% if form.task_priority.errors %}
+          <p class="text-red-500 text-sm mt-1">{{ form.task_priority.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
         <!-- Task Deadline Field -->
         <div>
           <p>Tasks deadline:</p>
           {{ form.task_deadline }}
-          <i>* Can't be after projects deadline</i>
+          <i>* Can't be after project's deadline</i>
           {% if form.task_deadline.errors %}
           <p class="text-red-500 text-sm mt-1">{{ form.task_deadline.errors|join:", " }}</p>
           {% endif %}

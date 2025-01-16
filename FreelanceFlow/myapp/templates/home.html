@@ -27,6 +27,40 @@
     </div>
   </div>
 
+  <form method="get" action="{% url 'myapp:home' %}" class="flex flex-col space-y-4 p-8 bg-gray-100">
+    <!-- Pretraživač -->
+    <input
+        type="text"
+        name="q"
+        value="{{ query|default:'' }}"
+        placeholder="Search projects by name or description"
+        class="block w-full p-2 border rounded-lg focus:ring focus:ring-blue-300"
+    />
+
+    <!-- Filter po statusu projekta -->
+    <select name="status" class="p-2 border rounded-lg">
+        <option value="">All Project Statuses</option>
+        <option value="ongoing" {% if project_status == 'ongoing' %}selected{% endif %}>Ongoing</option>
+        <option value="completed" {% if project_status == 'completed' %}selected{% endif %}>Completed</option>
+    </select>
+
+    <!-- Filter po ulozi -->
+    <select name="role" class="p-2 border rounded-lg">
+        <option value="">All Roles</option>
+        <option value="owner" {% if role == 'owner' %}selected{% endif %}>Owner</option>
+        <option value="viewer" {% if role == 'viewer' %}selected{% endif %}>Viewer</option>
+    </select>
+
+    <!-- Submit dugme -->
+    <button
+        type="submit"
+        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+    >
+        Search
+    </button>
+</form>
+
+
   <!-- Main content -->
   <div class="p-8">
     {% if user.is_authenticated %}

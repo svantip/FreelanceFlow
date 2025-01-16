@@ -25,6 +25,40 @@
     </div>
   </div>
 
+  <form method="get" action="" class="flex flex-col space-y-4 p-8 bg-gray-100">
+    <!-- Pretraživač -->
+    <input
+        type="text"
+        name="q"
+        value="{{ query|default:'' }}"
+        placeholder="Search tasks by name or description"
+        class="block w-full p-2 border rounded-lg focus:ring focus:ring-blue-300"
+    />
+
+    <!-- Filter po statusu zadatka -->
+    <select name="status" class="p-2 border rounded-lg">
+        <option value="">All Task Statuses</option>
+        <option value="ongoing" {% if task_status == 'ongoing' %}selected{% endif %}>Ongoing</option>
+        <option value="completed" {% if task_status == 'completed' %}selected{% endif %}>Completed</option>
+    </select>
+
+    <!-- Filter po prioritetu zadatka -->
+    <select name="priority" class="p-2 border rounded-lg">
+        <option value="">All Priorities</option>
+        <option value="high" {% if task_priority == 'high' %}selected{% endif %}>High</option>
+        <option value="medium" {% if task_priority == 'medium' %}selected{% endif %}>Medium</option>
+        <option value="low" {% if task_priority == 'low' %}selected{% endif %}>Low</option>
+    </select>
+
+    <!-- Submit dugme -->
+    <button
+        type="submit"
+        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+    >
+        Search
+    </button>
+</form>
+
   <!-- Main content -->
   <div class="p-8">
     {% if user.is_authenticated %}
@@ -47,31 +81,46 @@
         {% if tasks %}
         <ul class="space-y-4">
           {% for task in tasks %}
-          <li class="p-4 bg-white border rounded-3xl shadow flex justify-between items-center">
-            <div>
-              <h3 class="text-lg font-semibold">{{ task.task_name }}</h3>
-              <p class="text-gray-600">{{ task.task_description }}</p>
-              <p class="text-sm text-gray-500">Deadline: {{ task.task_deadline|date:"Y-m-d H:i" }}</p>
-              <p class="text-sm text-gray-500">Status: {{ task.get_task_status_display }}</p>
-            </div>
-            <div class="flex items-center space-x-4">
-              <!-- Checkbox za status -->
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  data-task-id="{{ task.task_id }}"
-                  {% if task.task_status == 'completed' %}checked{% endif %}
-                  class="task-status-checkbox h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring focus:ring-blue-300">
-              </label>
+          <li
+  class="p-4 border rounded-3xl shadow flex justify-between items-center"
+  data-task-id="{{ task.task_id }}"
+  data-priority="{{ task.task_priority }}"
+  data-status="{{ task.task_status }}"
+  style="
+    background-color:
+    {% if task.task_priority == 'high' %}#FFCCCC{% elif task.task_priority == 'medium' %}#FFFFCC{% elif task.task_priority == 'low' %}#CCFFCC{% else %}white{% endif %};
+  "
+>
+  <div>
+    <h3
+      class="text-lg font-semibold task-name"
+      style="{% if task.task_status == 'completed' %}text-decoration: line-through;{% endif %}">
+      {{ task.task_name }}
+    </h3>
+    <p class="text-gray-600">{{ task.task_description }}</p>
+    <p class="text-sm text-gray-500">Deadline: {{ task.task_deadline|date:"Y-m-d H:i" }}</p>
+    <p class="text-sm text-gray-500">
+      Status: <span class="task-status-display">{{ task.get_task_status_display }}</span>
+    </p>
 
-              <!-- Gumb za brisanje -->
-              <button
-                class="delete-task-button bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
-                data-task-id="{{ task.task_id }}">
-                Delete
-              </button>
-            </div>
-          </li>
+    <p class="text-sm text-gray-500">Priority: {{ task.get_task_priority_display }}</p>
+  </div>
+  <div class="flex items-center space-x-4">
+    <label class="flex items-center space-x-2">
+      <input
+        type="checkbox"
+        data-task-id="{{ task.task_id }}"
+        {% if task.task_status == 'completed' %}checked{% endif %}
+        class="task-status-checkbox h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring focus:ring-blue-300">
+    </label>
+    <button
+      class="delete-task-button bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+      data-task-id="{{ task.task_id }}">
+      Delete
+    </button>
+  </div>
+</li>
+
           {% endfor %}
         </ul>
         {% else %}
@@ -147,11 +196,31 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const checkboxes = document.querySelectorAll(".task-status-checkbox");
+    const csrfToken = "{{ csrf_token }}";
 
+    // Function to update task appearance based on status
+    const updateTaskAppearance = (taskItem, newStatus) => {
+      const taskName = taskItem.querySelector(".task-name");
+      const statusDisplay = taskItem.querySelector(".task-status-display");
+
+      // Update task name appearance
+      if (newStatus === "completed") {
+        taskName.style.textDecoration = "line-through";
+        taskItem.setAttribute("data-status", "completed");
+        statusDisplay.textContent = "Completed";
+      } else {
+        taskName.style.textDecoration = "none";
+        taskItem.setAttribute("data-status", "ongoing");
+        statusDisplay.textContent = "Ongoing";
+      }
+    };
+
+    // Handle status checkbox changes
+    const checkboxes = document.querySelectorAll(".task-status-checkbox");
     checkboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", async (e) => {
         const taskId = e.target.getAttribute("data-task-id");
+        const taskItem = document.querySelector(`li[data-task-id="${taskId}"]`);
         const newStatus = e.target.checked ? "completed" : "ongoing";
 
         try {
@@ -159,61 +228,61 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-CSRFToken": "{{ csrf_token }}",
+              "X-CSRFToken": csrfToken,
             },
             body: JSON.stringify({ status: newStatus }),
           });
 
           const data = await response.json();
-          if (!response.ok) {
+          if (response.ok) {
+            console.log("Success:", data.message);
+            updateTaskAppearance(taskItem, newStatus); // Update appearance on success
+          } else {
             console.error("Server error:", data.error);
             alert(data.error || "An error occurred.");
-            e.target.checked = !e.target.checked; // Revert change on error
-          } else {
-            console.log("Success:", data.message);
+            e.target.checked = !e.target.checked; // Revert checkbox on error
           }
         } catch (error) {
           console.error("Error:", error);
           alert("An unexpected error occurred.");
-          e.target.checked = !e.target.checked; // Revert change on error
+          e.target.checked = !e.target.checked; // Revert checkbox on error
         }
       });
     });
-       // Rukovanje brisanjem zadatka
-       const deleteButtons = document.querySelectorAll(".delete-task-button");
 
-       deleteButtons.forEach((button) => {
-         button.addEventListener("click", async (e) => {
-           const taskId = e.target.getAttribute("data-task-id");
+    // Handle task deletion
+    const deleteButtons = document.querySelectorAll(".delete-task-button");
+    deleteButtons.forEach((button) => {
+      button.addEventListener("click", async (e) => {
+        const taskId = e.target.getAttribute("data-task-id");
 
-           const confirmDelete = confirm("Are you sure you want to delete this task?");
-           if (!confirmDelete) return;
+        const confirmDelete = confirm("Are you sure you want to delete this task?");
+        if (!confirmDelete) return;
 
-           try {
-             const response = await fetch(`/delete_task/${taskId}/`, {
-               method: "POST",
-               headers: {
-                 "X-CSRFToken": "{{ csrf_token }}",
-               },
-             });
+        try {
+          const response = await fetch(`/delete_task/${taskId}/`, {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrfToken,
+            },
+          });
 
-             const data = await response.json();
-             if (response.ok) {
-               alert(data.message);
-               // Uklonite zadatak iz DOM-a
-               e.target.closest("li").remove();
-             } else {
-               alert(data.error || "An error occurred.");
-             }
-           } catch (error) {
-             console.error("Error:", error);
-             alert("An unexpected error occurred.");
-           }
-         });
-       });
+          const data = await response.json();
+          if (response.ok) {
+            alert(data.message);
+            e.target.closest("li").remove(); // Remove task from DOM
+          } else {
+            alert(data.error || "An error occurred.");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("An unexpected error occurred.");
+        }
+      });
+    });
   });
-
 </script>
+
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {

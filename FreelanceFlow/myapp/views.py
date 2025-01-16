@@ -15,15 +15,47 @@ from django.core.exceptions import ValidationError
 from django.views.decorators.csrf import csrf_exempt
 from .forms import LoginForm, RegistrationForm
 import logging
+from django.db.models import Q
+
 logger = logging.getLogger(__name__)
+
 
 @login_required
 def home_view(request):
-    user = request.user
-    # Fetch projects where the user is the owner or a viewer
+    query = request.GET.get('q', '')  # Pretraživačka fraza
+    # Filtriranje po statusu projekata
+    project_status = request.GET.get('status', '')
+    # Filtriranje po ulozi (Owner ili Viewer)
+    role = request.GET.get('role', '')
+
+    # Filtriranje projekata povezanih s korisnikom
     projects = Project.objects.filter(
-        owner=user) | Project.objects.filter(viewers=user)
-    context = {"projects": projects}
+        Q(owner=request.user) | Q(viewers=request.user)
+    ).distinct()
+
+    # Primjena pretraživačke fraze
+    if query:
+        projects = projects.filter(
+            Q(project_name__icontains=query) |
+            Q(project_description__icontains=query)
+        )
+
+    # Filtriranje po statusu projekta
+    if project_status:
+        projects = projects.filter(project_status=project_status)
+
+    # Filtriranje po ulozi
+    if role == 'owner':
+        projects = projects.filter(owner=request.user)
+    elif role == 'viewer':
+        projects = projects.filter(viewers=request.user)
+
+    context = {
+        "projects": projects,
+        "query": query,
+        "project_status": project_status,
+        "role": role,
+    }
     return render(request, "home.html", context)
 
 
@@ -151,18 +183,34 @@ def delete_project(request):
 def project_details(request, pk):
     project = get_object_or_404(Project, pk=pk)
 
-    # Ensure the user has access to the project
+    # Provjera da li korisnik ima pristup projektu
     if request.user != project.owner and request.user not in project.viewers.all():
-        # Return 403 forbidden page if unauthorized
         return render(request, "403.html", status=403)
 
+    query = request.GET.get('q', '')  # Pretraživačka fraza
+    # Filtriranje po statusu zadatka
+    task_status = request.GET.get('status', '')
+    # Filtriranje po prioritetu zadatka
+    task_priority = request.GET.get('priority', '')
+
+    # Filtriranje zadataka unutar projekta
     tasks = project.tasks.all()
-    users = project.viewers.all()  # Users who have access
+    if query:
+        tasks = tasks.filter(
+            Q(task_name__icontains=query) |
+            Q(task_description__icontains=query)
+        )
+    if task_status:
+        tasks = tasks.filter(task_status=task_status)
+    if task_priority:
+        tasks = tasks.filter(task_priority=task_priority)
 
     context = {
         'project': project,
         'tasks': tasks,
-        'users': users,
+        'query': query,
+        'task_status': task_status,
+        'task_priority': task_priority,
     }
     return render(request, 'projects/project_details.html', context)
 
@@ -280,6 +328,7 @@ def add_user_to_project(request, project_id):
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
 
+
 @csrf_exempt
 @login_required
 def update_task_status(request, task_id):
@@ -288,7 +337,7 @@ def update_task_status(request, task_id):
             logger.info(request.body)  # Log the incoming request body
             data = json.loads(request.body)
             new_status = data.get("status")
-            
+
             if new_status not in dict(Task.TASK_STATUS_CHOICES):
                 return JsonResponse({"error": "Invalid status"}, status=400)
 
@@ -301,6 +350,8 @@ def update_task_status(request, task_id):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 @login_required
 def delete_task(request, task_id):
     if request.method == "POST" and request.user.is_authenticated:
@@ -311,5 +362,3 @@ def delete_task(request, task_id):
         except Task.DoesNotExist:
             return JsonResponse({"error": "Task not found"}, status=404)
     return JsonResponse({"error": "Invalid request method"}, status=405)
-
-
