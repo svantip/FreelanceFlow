@@ -4,11 +4,11 @@
 {% block title %}{{ project.project_name }}{% endblock %}
 
 {% block content %}
-<div class="w-screen h-screen bg-gray-100">
+<div class="w-full h-full bg-gray-100">
   <!-- Top-left logo and Top-right navigation -->
   <div class="flex justify-between items-center p-8">
     <a href="{% url 'myapp:home' %}" class="flex items-center">
-      <img src="{% static 'images/FF.svg' %}" alt="FreelanceFlow Logo" class="h-10 w-auto">
+      <img src="{% static 'images/FF.png' %}" alt="FreelanceFlow Logo" class="h-10 w-auto">
       <span class="ml-2 text-xl font-bold text-gray-800">FreelanceFlow</span>
     </a>
     <div>
@@ -132,7 +132,7 @@
       </div>
     </div>
 
-    <div class="absolute bottom-0 right-0 m-5">
+    <div class="fixed  bottom-0 right-0 m-5">
       <a href="{% url 'myapp:create_task' project.project_id %}" class="flex items-center bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-700" title="Create New Task">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 4a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H5a1 1 0 110-2h6V5a1 1 0 011-1z" />

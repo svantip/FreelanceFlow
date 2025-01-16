@@ -4,7 +4,7 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="w-screen h-screen bg-gray-100">
+<div class="min-h-full w-full bg-gray-100">
   <!-- Top-left logo and Top-right navigation -->
   <div class="flex justify-between items-center p-8">
     <!-- Top-left logo -->
@@ -33,7 +33,7 @@
     <h1 class="text-xl font-bold mb-4 mt-5 lg:mt-0">Welcome to FreelanceFlow!</h1>
 
     <!-- Create project button -->
-    <div class="absolute bottom-0 right-0 m-5">
+    <div class="fixed bottom-0 right-0 m-5">
       <a
         href="{% url 'myapp:create_project' %}"
         class="flex items-center bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-700"

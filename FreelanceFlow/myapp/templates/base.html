@@ -7,8 +7,8 @@
     <title>{% block title %}Site Title{% endblock %}</title>
     {% tailwind_css %}
   </head>
-  <body style="w-screen h-screen">
-    <main>
+  <body class="h-full bg-gray-100">
+    <main class="min-h-screen flex flex-col">
       {% block content %}
       <!-- Content goes here -->
       {% endblock content %}
