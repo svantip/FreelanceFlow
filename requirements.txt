@@ -1,4 +1,5 @@
 asgiref
+tailwind
 Django
 django-browser-reload
 django-tailwind
