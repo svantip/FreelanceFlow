@@ -29,9 +29,9 @@ git rebase --continue
 ### Docker
 ```
 # Pokretanje aplikacije
-docker compose up
+docker-compose up
 # Zaustavljanje aplikacije
-docker compose down
+docker-compose down
 ```
 
 
