@@ -25,39 +25,14 @@ git merge main
 git add resolved-file
 git rebase --continue
 ```
-### Postavljanje virtualnog okruzenja
-```
-# Windows:
-python -m venv venv
-venv\Scripts\activate
 
-# macOS/Linux:
-python3 -m venv venv
-source venv/bin/activate
+### Docker
 ```
-### Instaliranje python zavisnosti
+# Pokretanje aplikacije
+docker compose up
+# Zaustavljanje aplikacije
+docker compose down
 ```
-pip install -r requirements.txt
-```
-### Instaliranje node.js zavisnosti
-```
-npm install
-
-cd theme/static_src
-npm install
-```
-### Prvi terminal - hot reload
-```
-python manage.py tailwind build
-python manage.py tailwind start
-```
-### Drugi terminal - django server
-```
-python manage.py runserver
-```
-
-## Additional Requirements
-- Tailwind CSS (`npm install tailwindcss`)
 
 
 
