@@ -1,3 +1,11 @@
+from django.utils.timezone import now
+from myapp.tasks import generate_weekly_report
+from django.shortcuts import redirect
+from django.core.cache import cache
+from .models import WeeklyReport
+from .models import Task
+from datetime import datetime, timedelta
+from django.shortcuts import render
 import json
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
@@ -362,3 +370,41 @@ def delete_task(request, task_id):
         except Task.DoesNotExist:
             return JsonResponse({"error": "Task not found"}, status=404)
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+@login_required
+def generate_report(request):
+    if request.method == "POST":
+        # Trigger the Celery task
+        generate_weekly_report.delay()
+        # Optionally clear the cache to force fresh data
+        cache.delete('weekly_report')
+        messages.success(request, "The weekly report is being generated.")
+        # Redirect to the weekly report page
+        return redirect("myapp:weekly_report")
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+@login_required
+def weekly_report(request):
+    reports = cache.get('weekly_report')
+
+    # Fetch reports if not cached
+    if not reports:
+        end_date = now()
+        start_date = end_date - timedelta(days=7)
+        start_date = start_date.astimezone()
+        end_date = end_date.astimezone()
+
+        reports = WeeklyReport.objects.filter(
+            start_date__lte=end_date,
+            end_date__gte=start_date
+        ).select_related('project')
+
+    context = {
+        "reports": reports,
+        "start_date": reports[0].start_date if reports else None,
+        "end_date": reports[0].end_date if reports else None,
+    }
+    return render(request, "reports/weekly_report.html", context)

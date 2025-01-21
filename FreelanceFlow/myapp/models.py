@@ -91,3 +91,14 @@ class Task(models.Model):
     @classmethod
     def get_tasks_by_priority(cls, priority):
         return cls.objects.filter(task_priority=priority)
+
+
+class WeeklyReport(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    completed_tasks_count = models.IntegerField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    generated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('project', 'start_date', 'end_date')

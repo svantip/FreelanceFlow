@@ -5,3 +5,7 @@ django-browser-reload
 django-tailwind
 sqlparse
 tzdata
+celery
+redis
+django-celery-beat
+django-redis

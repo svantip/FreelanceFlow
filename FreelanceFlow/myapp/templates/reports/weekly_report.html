@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Weekly Report{% endblock %}
+{% block content %}
+<div class="container mx-auto p-6">
+  <h1 class="text-xl font-bold mb-4">Weekly Task Completion Report</h1>
+  {% if reports %}
+    <ul>
+      {% for report in reports %}
+        <h2 class="text-l font-normal">
+          {{ report.start_date|date:"Y-m-d" }} - {{ report.end_date|date:"Y-m-d" }}
+        </h2>
+        <li>
+          <strong>{{ report.project.project_name }}:</strong> {{ report.completed_tasks_count }} completed tasks
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No tasks completed this week.</p>
+  {% endif %}
+</div>
+{% endblock %}

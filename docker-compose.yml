@@ -4,9 +4,19 @@ services:
   web:
     build:
       context: .
+    container_name: freelanceflow-web
     ports:
       - "8000:8000"
     volumes:
       - .:/FreelanceFlow
     environment:
       DEBUG: 'True'
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: freelanceflow-redis
+    ports:
+      - "6379:6379"

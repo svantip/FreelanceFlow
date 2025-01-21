@@ -5,25 +5,7 @@
 
 {% block content %}
 <div class="w-full h-full bg-gray-100">
-  <!-- Top-left logo and Top-right navigation -->
-  <div class="flex justify-between items-center p-8">
-    <a href="{% url 'myapp:home' %}" class="flex items-center">
-      <img src="{% static 'images/FF.png' %}" alt="FreelanceFlow Logo" class="h-10 w-auto">
-      <span class="ml-2 text-xl font-bold text-gray-800">FreelanceFlow</span>
-    </a>
-    <div>
-      {% if user.is_authenticated %}
-      <p class="inline text-gray-800">Hello, {{ user.username }}!</p>
-      <form action="{% url 'myapp:logout' %}" method="POST" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="ml-4 text-blue-500 hover:underline">Logout</button>
-      </form>
-      {% else %}
-      <a href="{% url 'myapp:login' %}" class="text-blue-500 hover:underline">Login</a>
-      <a href="{% url 'myapp:register' %}" class="ml-4 text-blue-500 hover:underline">Register</a>
-      {% endif %}
-    </div>
-  </div>
+
 
   <form method="get" action="" class="flex flex-col space-y-4 p-8 bg-gray-100">
     <!-- Pretraživač -->

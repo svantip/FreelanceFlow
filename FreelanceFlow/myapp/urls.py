@@ -26,10 +26,11 @@ urlpatterns = [
          name="delete_task"),  # Delete task
     path('projects/<int:project_id>/add-user/',
          views.add_user_to_project, name='add_user_to_project'),
-     path('update_task_status/<int:task_id>/', views.update_task_status, 
-          name='update_task_status'),
+    path('update_task_status/<int:task_id>/', views.update_task_status,
+         name='update_task_status'),
     path('delete_task/<int:task_id>/',
-          views.delete_task, name='delete_task'),
-
+         views.delete_task, name='delete_task'),
+    path('reports/generate/', views.generate_report, name='generate_report'),
+    path('reports/weekly/', views.weekly_report, name='weekly_report'),
 
 ]

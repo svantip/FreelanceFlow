@@ -20,7 +20,8 @@ INSTALLED_APPS = [
     'django_browser_reload',
     'tailwind',
     'theme',
-    'myapp',  # Custom app
+    'myapp',
+    'django_celery_beat',
 ]
 
 # Middleware
@@ -61,6 +62,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 30,
+        },
     }
 }
 
@@ -102,3 +106,19 @@ LOGOUT_REDIRECT_URL = '/login/'
 # Tailwind config
 TAILWIND_APP_NAME = 'theme'
 NPM_BIN_PATH = which("npm")
+
+# Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://freelanceflow-redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+    }
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://freelanceflow-redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
