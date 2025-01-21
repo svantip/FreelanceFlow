@@ -100,5 +100,9 @@ class WeeklyReport(models.Model):
     end_date = models.DateTimeField()
     generated_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('project', 'start_date', 'end_date')
+    def __str__(self):
+        return f"Weekly Report for {self.project.project_name} ({self.start_date} - {self.end_date})"
+
+    def completion_percentage(self):
+        total_tasks = self.project.tasks.count()
+        return (self.completed_tasks_count / total_tasks * 100) if total_tasks > 0 else 0

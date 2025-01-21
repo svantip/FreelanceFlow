@@ -40,7 +40,8 @@
     </button>
 </form>
 
-<div>
+<div class="fixed bottom-0 z-50 left-0 p-8">
+  <div></div>
   <form method="post" action="{% url 'myapp:generate_report' %}">
     {% csrf_token %}
     <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">
@@ -57,7 +58,7 @@
     <h1 class="text-xl font-bold mb-4 mt-5 lg:mt-0">Welcome to FreelanceFlow!</h1>
 
     <!-- Create project button -->
-    <div class="fixed bottom-0 z-50 right-0 m-5">
+    <div class="fixed bottom-0 z-50 right-0 p-8">
       <a
         href="{% url 'myapp:create_project' %}"
         class="flex items-center bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-700"
