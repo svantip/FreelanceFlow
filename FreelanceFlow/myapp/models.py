@@ -93,16 +93,16 @@ class Task(models.Model):
         return cls.objects.filter(task_priority=priority)
 
 
+from django.db import models
+from django.utils.timezone import now
+
 class WeeklyReport(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     completed_tasks_count = models.IntegerField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    generated_at = models.DateTimeField(auto_now_add=True)
+    completion_percentage = models.FloatField()  # Add this field
+    generated_at = models.DateTimeField(default=now)
 
     def __str__(self):
-        return f"Weekly Report for {self.project.project_name} ({self.start_date} - {self.end_date})"
-
-    def completion_percentage(self):
-        total_tasks = self.project.tasks.count()
-        return (self.completed_tasks_count / total_tasks * 100) if total_tasks > 0 else 0
+        return f"Weekly Report for {self.project} ({self.start_date} - {self.end_date})"

@@ -10,8 +10,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'FreelanceFlow.settings')
 
 app = Celery('FreelanceFlow')
 
+app.conf.broker_connection_retry_on_startup = True
+
 # Load settings from Django settings, using the 'CELERY' namespace
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Autodiscover tasks in all installed apps
 app.autodiscover_tasks()
+
+@app.task(bind=True)
+def debug_task(self):
+    print(f'Request: {self.request!r}')

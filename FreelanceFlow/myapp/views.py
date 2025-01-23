@@ -372,39 +372,79 @@ def delete_task(request, task_id):
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from .tasks import generate_weekly_report
+
 @login_required
 def generate_report(request):
     if request.method == "POST":
         # Trigger the Celery task
         generate_weekly_report.delay()
-        # Optionally clear the cache to force fresh data
-        cache.delete('weekly_report')
-        messages.success(request, "The weekly report is being generated.")
-        # Redirect to the weekly report page
+
+        # Clear the cache to ensure fresh data is retrieved next time
+        cache.delete("latest_weekly_reports")
+        messages.success(request, "The weekly report is being generated. Please check back shortly.")
         return redirect("myapp:weekly_report")
 
     return JsonResponse({"error": "Invalid request method"}, status=400)
 
+from django.db.models import Max
+from django.shortcuts import render
+from django.core.cache import cache
+from .models import WeeklyReport
 
-@login_required
 def weekly_report(request):
-    reports = cache.get('weekly_report')
+    cache.delete("latest_weekly_reports")
+    # Define the cache key
+    cache_key = "latest_weekly_reports"
 
-    # Fetch reports if not cached
-    if not reports:
-        end_date = now()
-        start_date = end_date - timedelta(days=7)
-        start_date = start_date.astimezone()
-        end_date = end_date.astimezone()
+    # Try to retrieve cached data
+    cached_data = cache.get(cache_key)
 
-        reports = WeeklyReport.objects.filter(
-            start_date__lte=end_date,
-            end_date__gte=start_date
-        ).select_related('project')
+    if not cached_data:
+        # Retrieve the latest report for each project
+        latest_reports_ids = (
+            WeeklyReport.objects.values("project_id")
+            .annotate(latest_id=Max("id"))
+            .values_list("latest_id", flat=True)
+        )
 
+        # Fetch the actual reports from the database
+        latest_reports = WeeklyReport.objects.filter(id__in=latest_reports_ids).select_related("project")
+
+        # Serialize the reports into a dictionary for caching
+        serialized_reports = [
+            {
+                "project_name": report.project.project_name,
+                "completed_tasks_count": report.completed_tasks_count,
+                "completion_percentage": report.completion_percentage,
+                "start_date": report.start_date,
+                "end_date": report.end_date,
+            }
+            for report in latest_reports
+        ]
+
+        # Cache the serialized data for 1 hour
+        cache.set(cache_key, serialized_reports, timeout=60 * 60)
+    else:
+        # Deserialize the cached data
+        serialized_reports = cached_data
+
+    # Handle case when no reports exist
+    if not serialized_reports:
+        context = {
+            "message": "No reports are available.",
+        }
+        return render(request, "reports/no_reports.html", context)
+
+    # Pass the reports to the template
     context = {
-        "reports": reports,
-        "start_date": reports[0].start_date if reports else None,
-        "end_date": reports[0].end_date if reports else None,
+        "reports": serialized_reports,
+        "start_date": serialized_reports[0]["start_date"] if serialized_reports else None,
+        "end_date": serialized_reports[0]["end_date"] if serialized_reports else None,
     }
     return render(request, "reports/weekly_report.html", context)
