@@ -1,5 +1,5 @@
+import io
 from django.utils.timezone import now
-from myapp.tasks import generate_weekly_report
 from django.shortcuts import redirect
 from django.core.cache import cache
 from .models import WeeklyReport
@@ -14,7 +14,7 @@ from django.shortcuts import redirect, render
 from .models import *
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.contrib import messages
 from .models import Project
 from .forms import *
@@ -393,79 +393,63 @@ def delete_task(request, task_id):
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
-from django.contrib import messages
-from django.shortcuts import redirect
-from django.http import JsonResponse
+from django.http import HttpResponse
+from django.core.management import call_command
 from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
-from .tasks import generate_weekly_report
+from myapp.models import WeeklyReport
+from reportlab.pdfgen import canvas
+from django.utils.timezone import now
+import io
 
 @login_required
-def generate_report(request):
-    if request.method == "POST":
-        # Trigger the Celery task
-        generate_weekly_report.delay()
+def generate_report_view(request):
+    # Step 1: Call the management command to generate the reports
+    try:
+        call_command('generate_reports')
+    except Exception as e:
+        return HttpResponse(f"Error generating reports: {str(e)}", status=500)
 
-        # Clear the cache to ensure fresh data is retrieved next time
-        cache.delete("latest_weekly_reports")
-        messages.success(request, "The weekly report is being generated. Please check back shortly.")
-        return redirect("myapp:weekly_report")
+    # Step 2: Retrieve the generated reports for the current user
+    reports = WeeklyReport.objects.filter(project__owner=request.user).order_by("-end_date")
 
-    return JsonResponse({"error": "Invalid request method"}, status=400)
+    # Step 3: Generate a PDF file
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer)
 
-from django.db.models import Max
-from django.shortcuts import render
-from django.core.cache import cache
-from .models import WeeklyReport
+    # PDF Metadata
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(100, 800, f"Weekly Report for {request.user.username}")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(100, 780, f"Generated on: {now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-def weekly_report(request):
-    cache.delete("latest_weekly_reports")
-    # Define the cache key
-    cache_key = "latest_weekly_reports"
+    y = 750
+    if reports.exists():
+        for report in reports:
+            project = report.project
+            y -= 40
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.drawString(100, y, f"Project: {project.project_name}")
+            pdf.setFont("Helvetica", 10)
+            y -= 20
+            pdf.drawString(120, y, f"Completed Tasks: {report.completed_tasks_count}")
+            y -= 20
+            pdf.drawString(120, y, f"Completion Percentage: {report.completion_percentage:.2f}%")
+            y -= 20
+            pdf.drawString(120, y, f"Start Date: {report.start_date.strftime('%Y-%m-%d')}")
+            pdf.drawString(120, y - 20, f"End Date: {report.end_date.strftime('%Y-%m-%d')}")
+            y -= 40
 
-    # Try to retrieve cached data
-    cached_data = cache.get(cache_key)
-
-    if not cached_data:
-        # Retrieve the latest report for each project
-        latest_reports_ids = (
-            WeeklyReport.objects.values("project_id")
-            .annotate(latest_id=Max("id"))
-            .values_list("latest_id", flat=True)
-        )
-
-        # Fetch the actual reports from the database
-        latest_reports = WeeklyReport.objects.filter(id__in=latest_reports_ids).select_related("project")
-
-        # Serialize the reports into a dictionary for caching
-        serialized_reports = [
-            {
-                "project_name": report.project.project_name,
-                "completed_tasks_count": report.completed_tasks_count,
-                "completion_percentage": report.completion_percentage,
-                "start_date": report.start_date,
-                "end_date": report.end_date,
-            }
-            for report in latest_reports
-        ]
-
-        # Cache the serialized data for 1 hour
-        cache.set(cache_key, serialized_reports, timeout=60 * 60)
+            if y < 100:  # Add a new page if space runs out
+                pdf.showPage()
+                y = 750
     else:
-        # Deserialize the cached data
-        serialized_reports = cached_data
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(100, y, "No reports available.")
 
-    # Handle case when no reports exist
-    if not serialized_reports:
-        context = {
-            "message": "No reports are available.",
-        }
-        return render(request, "reports/no_reports.html", context)
+    pdf.save()
+    buffer.seek(0)
 
-    # Pass the reports to the template
-    context = {
-        "reports": serialized_reports,
-        "start_date": serialized_reports[0]["start_date"] if serialized_reports else None,
-        "end_date": serialized_reports[0]["end_date"] if serialized_reports else None,
-    }
-    return render(request, "reports/weekly_report.html", context)
+    # Step 4: Serve the PDF as a download
+    response = HttpResponse(buffer, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename=Weekly_Report_{request.user.username}.pdf'
+    return response

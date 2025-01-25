@@ -22,7 +22,6 @@ INSTALLED_APPS = [
     'django_browser_reload',
     'myapp',  # Your app
     'tailwind',  # Tailwind CSS integration
-    'django_celery_beat',  # Celery beat integration
     'channels',  # Channels for WebSocket support
 ]
 
@@ -66,7 +65,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "hosts": [("redis", 6379)],  # Host matches the service name
         },
     },
 }
@@ -134,13 +133,8 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
-    }
+    },
 }
-
-# Celery Configuration
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
 
 # Logging configuration
 LOGGING = {
@@ -164,3 +158,6 @@ LOGGING = {
         },
     },
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

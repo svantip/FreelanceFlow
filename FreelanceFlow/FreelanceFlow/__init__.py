@@ -1,7 +1,3 @@
-from __future__ import absolute_import, unicode_literals
+# FreelanceFlow/__init__.py
 
-# This will make sure the app is always imported when
-# Django starts so that tasks can be executed.
-from .celery import app as celery_app
-
-__all__ = ('celery_app',)
+# This file ensures that the directory is treated as a Python package.

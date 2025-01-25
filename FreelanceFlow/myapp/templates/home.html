@@ -42,13 +42,18 @@
 
 <div class="fixed bottom-0 z-50 left-0 p-8">
   <div></div>
+
   <form method="post" action="{% url 'myapp:generate_report' %}">
     {% csrf_token %}
-    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">
-      Generate Weekly Report
+    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        Generate and Download Report
     </button>
-  </form>
+</form>
+
+
+
 </div>
+
 
 
 
@@ -179,4 +184,32 @@
     }
   }
 </script>
+
+<script>
+  function generateReport() {
+    fetch('/generate_report/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert("Report generation started! The report will be available for download shortly.");
+            // Optionally, you can implement polling here to check if the report is ready
+        } else {
+            alert("Error starting report generation.");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while starting report generation.');
+    });
+}
+</script>
+
+
+
 {% endblock %}

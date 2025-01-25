@@ -30,7 +30,7 @@ urlpatterns = [
          name='update_task_status'),
     path('delete_task/<int:task_id>/',
          views.delete_task, name='delete_task'),
-    path('reports/generate/', views.generate_report, name='generate_report'),
-    path('reports/weekly/', views.weekly_report, name='weekly_report'),
 
+    # Report Generation Logic
+    path('generate_report/', views.generate_report_view, name='generate_report'),  # Generate report
 ]
