@@ -1,0 +1,46 @@
+# Use an official Python runtime as a base image
+FROM python:3.10-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Set the working directory inside the container
+WORKDIR /app/FreelanceFlow
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    nodejs \
+    npm \
+    redis && \
+    apt-get clean
+
+# Copy Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project files
+COPY FreelanceFlow .
+
+# Install Tailwind CSS and its dependencies globally
+RUN npm install -g tailwindcss postcss autoprefixer
+
+# Install Node.js dependencies for the project
+RUN npm install --prefix /app/FreelanceFlow
+
+# Build Tailwind CSS
+RUN npx tailwindcss -c /app/FreelanceFlow/staticfiles/tailwind.config.js -i /app/FreelanceFlow/staticfiles/src/input.css \
+    -o /app/FreelanceFlow/staticfiles/css/output.css
+
+RUN cd FreelanceFlow
+
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
+# Expose Daphne's port
+EXPOSE 9000
+
+# Default command is set in `docker-compose.yml`

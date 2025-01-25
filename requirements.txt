@@ -2,10 +2,12 @@ asgiref
 tailwind
 Django
 django-browser-reload
-django-tailwind
 sqlparse
 tzdata
 celery
 redis
 django-celery-beat
 django-redis
+channels
+channels-redis
+daphne

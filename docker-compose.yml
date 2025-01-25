@@ -1,22 +1,50 @@
-version: '3.8'
-
 services:
-  web:
-    build:
-      context: .
-    container_name: freelanceflow-web
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/FreelanceFlow
-    environment:
-      DEBUG: 'True'
-      CELERY_BROKER_URL: redis://redis:6379/0
-    depends_on:
-      - redis
-
   redis:
-    image: redis:alpine
-    container_name: freelanceflow-redis
+    build:
+        context: .
+        dockerfile: ./Dockerfile.redis
+    container_name: redis
     ports:
       - "6379:6379"
+    networks:
+      - redis-django
+
+  asgiserver:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.daphne
+    container_name: asgiserver
+    command: daphne -b 0.0.0.0 -p 9000 FreelanceFlow.asgi:application
+    environment:
+      - DJANGO_SETTINGS_MODULE=FreelanceFlow.settings
+      - PYTHONPATH=/app
+    volumes:
+      - static_volume:/staticfiles
+    ports:
+      - "9000:9000"
+    depends_on:
+      - redis
+    networks:
+      - redis-django
+
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.nginx
+    container_name: nginx
+    volumes:
+      - static_volume:/staticfiles
+    ports:
+      - "80:80"
+    depends_on:
+      - asgiserver
+    networks:
+      - redis-django
+
+networks:
+  redis-django:
+    driver: bridge
+
+volumes:
+  static_volume:

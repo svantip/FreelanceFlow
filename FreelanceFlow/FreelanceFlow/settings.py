@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from shutil import which
 
 # Base directory of the project
@@ -7,10 +8,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security settings
 SECRET_KEY = 'django-insecure-your-secret-key'
 DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '0.0.0.0']
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", 'asgiserver']
 
 # Installed apps
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -18,10 +20,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_browser_reload',
-    'tailwind',
-    'theme',
-    'myapp',
-    'django_celery_beat',
+    'myapp',  # Your app
+    'tailwind',  # Tailwind CSS integration
+    'django_celery_beat',  # Celery beat integration
+    'channels',  # Channels for WebSocket support
 ]
 
 # Middleware
@@ -33,7 +35,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_browser_reload.middleware.BrowserReloadMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',  # For browser reloads
 ]
 
 ROOT_URLCONF = 'FreelanceFlow.urls'
@@ -55,7 +57,19 @@ TEMPLATES = [
     },
 ]
 
+# WSGI and ASGI configurations
 WSGI_APPLICATION = 'FreelanceFlow.wsgi.application'
+ASGI_APPLICATION = 'FreelanceFlow.asgi.application'
+
+# Redis Channel Layer Backend
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
+}
 
 # Database
 DATABASES = {
@@ -86,14 +100,19 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+import os
+
+
 STATIC_URL = '/static/'
 
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
 STATICFILES_DIRS = [
-    BASE_DIR / "theme" / "static",
+    os.path.join(BASE_DIR, "staticfiles/images"),
+    os.path.join(BASE_DIR, "staticfiles/src"),  # Location of `input.css`
+    os.path.join(BASE_DIR, "staticfiles/css"),     # Location of `output.css`
 ]
+
+STATIC_ROOT = '/staticfiles/'  # Collect all static files for production
+
 
 # Default auto field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -103,15 +122,15 @@ LOGIN_URL = '/login/'  # Redirect to the login page defined in your app
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# Tailwind config
-TAILWIND_APP_NAME = 'theme'
-NPM_BIN_PATH = which("npm")
+# Tailwind configuration
+TAILWIND_APP_NAME = 'myapp'  # Update with your app name
+NPM_BIN_PATH = which("npm") or "/usr/bin/npm"  # Ensure NPM is available
 
 # Cache Configuration
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://freelanceflow-redis:6379/1',
+        'LOCATION': 'redis://redis:6379/1',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
@@ -119,15 +138,11 @@ CACHES = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://freelanceflow-redis:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-
-import os
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -135,7 +150,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'debug.log'),  # Save log to BASE_DIR
+            'filename': os.path.join(BASE_DIR, 'debug.log'),
         },
         'console': {
             'class': 'logging.StreamHandler',

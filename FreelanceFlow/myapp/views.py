@@ -297,13 +297,20 @@ def delete_task(request, task_id):
     return redirect('myapp:project_details', pk=task.project.project_id)
 
 
+import json
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from .models import Project, User
+
 @login_required
 def add_user_to_project(request, project_id):
     if request.method == "POST":
         try:
             # Parse JSON body
             data = json.loads(request.body)
-            # Strip leading/trailing spaces
             email = data.get("email", "").strip()
             print(f"Email received: {email}")
 
@@ -326,6 +333,20 @@ def add_user_to_project(request, project_id):
 
             # Add user to project viewers
             project.viewers.add(user)
+
+            # Send real-time notification to the user
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{user.id}",  # Group name based on user ID
+                {
+                    "type": "send_notification",  # Custom event type
+                    "message": {
+                        "title": "You were added to a project",
+                        "body": f"You have been added to the project '{project.project_name}' as a viewer."
+                    },
+                }
+            )
+
             return JsonResponse({"success": True, "message": f"User {user.username} added successfully."}, status=200)
 
         except json.JSONDecodeError:
