@@ -332,7 +332,7 @@ def generate_report_view(request):
     )
 
     buffer = io.BytesIO()
-    pdf = Canvas.Canvas(buffer)
+    pdf = canvas.Canvas(buffer)
 
     pdf.setFont("Helvetica-Bold", 16)
     pdf.drawString(100, 800, f"Weekly Report for {request.user.username}")
