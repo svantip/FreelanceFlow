@@ -1,0 +1,17 @@
+# Koristi službenu MongoDB sliku
+FROM mongo:5.0
+
+# Postavi environment varijable za inicijalizaciju
+ENV MONGO_INITDB_ROOT_USERNAME=root
+ENV MONGO_INITDB_ROOT_PASSWORD=12345
+ENV MONGO_INITDB_DATABASE=freelanceflow
+
+# Kopiraj skripte za inicijalizaciju baze (ako ih imaš)
+COPY ./init-mongo.js /docker-entrypoint-initdb.d/
+
+# Kopiraj konfiguracijske datoteke (opcionalno)
+# Ako imaš prilagođene MongoDB konfiguracije, dodaj ih ovdje
+COPY ./mongodb.conf /etc/mongodb.conf
+
+# Postavi MongoDB da koristi prilagođenu konfiguraciju (opcionalno)
+CMD ["mongod", "--config", "/etc/mongod.conf"]

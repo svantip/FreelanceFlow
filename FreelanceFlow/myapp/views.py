@@ -1,61 +1,50 @@
 import io
-from django.utils.timezone import now
-from django.shortcuts import redirect
-from django.core.cache import cache
-from .models import WeeklyReport
-from .models import Task
-from datetime import datetime, timedelta
-from django.shortcuts import render
 import json
+import logging
+from datetime import datetime, timedelta
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
-from .models import *
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
-from django.contrib import messages
-from .models import Project
-from .forms import *
-from django.views import View
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.views.decorators.csrf import csrf_exempt
-from .forms import LoginForm, RegistrationForm
-import logging
 from django.db.models import Q
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.timezone import now
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from reportlab.pdfgen import canvas
+
+from .forms import *
+from .forms import LoginForm, RegistrationForm
+from .models import *
+from .models import Project, Task, WeeklyReport
 
 logger = logging.getLogger(__name__)
 
 
 @login_required
 def home_view(request):
-    query = request.GET.get('q', '')  # Pretraživačka fraza
-    # Filtriranje po statusu projekata
-    project_status = request.GET.get('status', '')
-    # Filtriranje po ulozi (Owner ili Viewer)
-    role = request.GET.get('role', '')
+    query = request.GET.get("q", "")
+    project_status = request.GET.get("status", "")
+    role = request.GET.get("role", "")
 
-    # Filtriranje projekata povezanih s korisnikom
     projects = Project.objects.filter(
         Q(owner=request.user) | Q(viewers=request.user)
     ).distinct()
 
-    # Primjena pretraživačke fraze
     if query:
         projects = projects.filter(
-            Q(project_name__icontains=query) |
-            Q(project_description__icontains=query)
+            Q(project_name__icontains=query) | Q(project_description__icontains=query)
         )
 
-    # Filtriranje po statusu projekta
     if project_status:
         projects = projects.filter(project_status=project_status)
 
-    # Filtriranje po ulozi
-    if role == 'owner':
+    if role == "owner":
         projects = projects.filter(owner=request.user)
-    elif role == 'viewer':
+    elif role == "viewer":
         projects = projects.filter(viewers=request.user)
 
     context = {
@@ -68,63 +57,46 @@ def home_view(request):
 
 
 def login_view(request):
-    """
-    Handle user login functionality.
-    """
-    if request.method == 'POST':
+    if request.method == "POST":
         form = LoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
+            username = form.cleaned_data["username"]
+            password = form.cleaned_data["password"]
 
-            # Authenticate the user
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {username}!")
-                return redirect('myapp:home')
+                return redirect("myapp:home")
             else:
-                # Add a non-field error for invalid credentials
                 form.add_error(None, "Invalid username or password.")
         else:
-            # Log form errors for debugging purposes
             print("Form errors:", form.errors)
     else:
         form = LoginForm()
 
-    return render(request, 'authentication/login.html', {'form': form})
+    return render(request, "authentication/login.html", {"form": form})
 
 
 def register_view(request):
-    """
-    Handle user registration functionality.
-    """
-    if request.method == 'POST':
+    if request.method == "POST":
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            form.save()  # Save the new user
-            messages.success(
-                request, "Registration successful! You can now log in."
-            )
-            # Redirect to login after registration
-            return redirect('myapp:login')
+            form.save()
+            messages.success(request, "Registration successful! You can now log in.")
+            return redirect("myapp:login")
         else:
-            print(form.errors)  # Debugging: Print errors in the console
+            print(form.errors)
     else:
         form = RegistrationForm()
 
-    return render(request, 'authentication/register.html', {'form': form})
+    return render(request, "authentication/register.html", {"form": form})
 
 
 @login_required
 def edit_project(request, pk):
-    """
-    Handle editing of a project by its owner.
-    Only the owner of the project can edit it.
-    """
     project = get_object_or_404(Project, pk=pk)
 
-    # Ensure the logged-in user is the owner of the project
     if project.owner != request.user:
         return HttpResponseForbidden("You do not have permission to edit this project.")
 
@@ -133,8 +105,7 @@ def edit_project(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Project updated successfully!")
-            # Redirect to the home page after saving
-            return redirect('myapp:home')
+            return redirect("myapp:home")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
@@ -145,19 +116,15 @@ def edit_project(request, pk):
 
 @login_required
 def create_project(request):
-    """
-    Handle creating a new project by the logged-in user.
-    """
     if request.method == "POST":
         form = CreateProjectForm(request.POST)
         if form.is_valid():
-            # Save the form with the logged-in user as the owner
             project = form.save(commit=False)
             project.owner = request.user
             project.save()
-            form.save_m2m()  # Save many-to-many data (tags)
+            form.save_m2m()
             messages.success(request, "Project created successfully!")
-            return redirect('myapp:home')  # Redirect to the home page
+            return redirect("myapp:home")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
@@ -169,44 +136,38 @@ def create_project(request):
 
 @login_required
 def delete_project(request):
-    # Get the project_id from the query string
-    project_id = request.GET.get('id')
+    project_id = request.GET.get("id")
     if not project_id:
         messages.error(request, "Project ID is missing.")
-        return redirect('myapp:home')
+        return redirect("myapp:home")
 
-    # Query using project_id (the correct field name)
     project = get_object_or_404(Project, project_id=project_id)
 
-    # Ensure only the owner can delete the project
     if project.owner != request.user:
-        return HttpResponseForbidden("You don't have permission to delete this project.")
+        return HttpResponseForbidden(
+            "You don't have permission to delete this project."
+        )
 
     project.delete()
     messages.success(request, "Project deleted successfully!")
-    return redirect('myapp:home')
+    return redirect("myapp:home")
 
 
 @login_required
 def project_details(request, pk):
     project = get_object_or_404(Project, pk=pk)
 
-    # Provjera da li korisnik ima pristup projektu
     if request.user != project.owner and request.user not in project.viewers.all():
         return render(request, "403.html", status=403)
 
-    query = request.GET.get('q', '')  # Pretraživačka fraza
-    # Filtriranje po statusu zadatka
-    task_status = request.GET.get('status', '')
-    # Filtriranje po prioritetu zadatka
-    task_priority = request.GET.get('priority', '')
+    query = request.GET.get("q", "")
+    task_status = request.GET.get("status", "")
+    task_priority = request.GET.get("priority", "")
 
-    # Filtriranje zadataka unutar projekta
     tasks = project.tasks.all()
     if query:
         tasks = tasks.filter(
-            Q(task_name__icontains=query) |
-            Q(task_description__icontains=query)
+            Q(task_name__icontains=query) | Q(task_description__icontains=query)
         )
     if task_status:
         tasks = tasks.filter(task_status=task_status)
@@ -214,13 +175,13 @@ def project_details(request, pk):
         tasks = tasks.filter(task_priority=task_priority)
 
     context = {
-        'project': project,
-        'tasks': tasks,
-        'query': query,
-        'task_status': task_status,
-        'task_priority': task_priority,
+        "project": project,
+        "tasks": tasks,
+        "query": query,
+        "task_status": task_status,
+        "task_priority": task_priority,
     }
-    return render(request, 'projects/project_details.html', context)
+    return render(request, "projects/project_details.html", context)
 
 
 @login_required
@@ -231,30 +192,25 @@ def create_task(request, project_id):
         form = CreateTaskForm(request.POST, project=project)
         if form.is_valid():
             task = form.save(commit=False)
-            task.project = project  # Ensure this is set before saving
+            task.project = project
             task.save()
             messages.success(request, "Task created successfully!")
-            return redirect('myapp:project_details', pk=project_id)
+            return redirect("myapp:project_details", pk=project_id)
         else:
             messages.error(request, "Please correct the errors below.")
     else:
         form = CreateTaskForm(project=project)
 
-    return render(request, 'tasks/create_task.html', {'form': form, 'project': project})
+    return render(request, "tasks/create_task.html", {"form": form, "project": project})
 
 
 @login_required
 def edit_task(request, task_id):
-    """
-    View to edit an existing task.
-    """
     task = get_object_or_404(Task, pk=task_id)
     project = task.project
 
-    # Check if the user has permission to edit tasks in this project
     if request.user != project.owner and request.user not in project.viewers.all():
-        messages.error(
-            request, "You do not have permission to edit this task.")
+        messages.error(request, "You do not have permission to edit this task.")
         return redirect("myapp:project_details", pk=project.project_id)
 
     if request.method == "POST":
@@ -265,7 +221,8 @@ def edit_task(request, task_id):
             return redirect("myapp:project_details", pk=project.project_id)
         else:
             messages.error(
-                request, "There was an error updating the task. Please try again.")
+                request, "There was an error updating the task. Please try again."
+            )
     else:
         form = EditTaskForm(instance=task)
 
@@ -279,80 +236,48 @@ def edit_task(request, task_id):
 
 @login_required
 def delete_task(request, task_id):
-    """
-    Handle the deletion of a task.
-    Only the owner of the associated project can delete the task.
-    """
-    # Fetch the task by its ID
     task = get_object_or_404(Task, task_id=task_id)
 
-    # Check if the logged-in user is the owner of the associated project
     if task.project.owner != request.user:
         return HttpResponseForbidden("You do not have permission to delete this task.")
 
-    # Delete the task
     task.delete()
     messages.success(request, "Task deleted successfully!")
-    # Redirect to the project's details page or any other appropriate page
-    return redirect('myapp:project_details', pk=task.project.project_id)
+    return redirect("myapp:project_details", pk=task.project.project_id)
 
-
-import json
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-from .models import Project, User
 
 @login_required
 def add_user_to_project(request, project_id):
     if request.method == "POST":
         try:
-            # Parse JSON body
             data = json.loads(request.body)
             email = data.get("email", "").strip()
-            print(f"Email received: {email}")
 
             if not email:
                 return JsonResponse({"error": "Email is required."}, status=400)
 
-            # Debug: Check if email exists in the database
             users = User.objects.filter(email__iexact=email)
-            print(f"Users found: {users}")
 
             if not users.exists():
                 return JsonResponse({"error": "User not found."}, status=404)
 
             user = users.first()
-            print(f"User selected: {user}")
 
-            # Use correct field for project lookup
             project = get_object_or_404(Project, project_id=project_id)
-            print(f"Project: {project}")
 
-            # Add user to project viewers
             project.viewers.add(user)
 
-            # Send real-time notification to the user
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"user_{user.id}",  # Group name based on user ID
+            return JsonResponse(
                 {
-                    "type": "send_notification",  # Custom event type
-                    "message": {
-                        "title": "You were added to a project",
-                        "body": f"You have been added to the project '{project.project_name}' as a viewer."
-                    },
-                }
+                    "success": True,
+                    "message": f"User {user.username} added successfully.",
+                },
+                status=200,
             )
-
-            return JsonResponse({"success": True, "message": f"User {user.username} added successfully."}, status=200)
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data."}, status=400)
         except Exception as e:
-            print(f"Unexpected error: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
@@ -363,7 +288,6 @@ def add_user_to_project(request, project_id):
 def update_task_status(request, task_id):
     if request.method == "POST":
         try:
-            logger.info(request.body)  # Log the incoming request body
             data = json.loads(request.body)
             new_status = data.get("status")
 
@@ -390,33 +314,26 @@ def delete_task(request, task_id):
             return JsonResponse({"message": "Task deleted successfully!"})
         except Task.DoesNotExist:
             return JsonResponse({"error": "Task not found"}, status=404)
-    return JsonResponse({"error": "Invalid request method"}, status=405)
+    return JsonResponse({"error": "Invalid request method."}, status=405)
 
 
-from django.http import HttpResponse
 from django.core.management import call_command
-from django.contrib.auth.decorators import login_required
-from myapp.models import WeeklyReport
-from reportlab.pdfgen import canvas
-from django.utils.timezone import now
-import io
+
 
 @login_required
 def generate_report_view(request):
-    # Step 1: Call the management command to generate the reports
     try:
-        call_command('generate_reports')
+        call_command("generate_reports")
     except Exception as e:
         return HttpResponse(f"Error generating reports: {str(e)}", status=500)
 
-    # Step 2: Retrieve the generated reports for the current user
-    reports = WeeklyReport.objects.filter(project__owner=request.user).order_by("-end_date")
+    reports = WeeklyReport.objects.filter(project__owner=request.user).order_by(
+        "-end_date"
+    )
 
-    # Step 3: Generate a PDF file
     buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer)
+    pdf = Canvas.Canvas(buffer)
 
-    # PDF Metadata
     pdf.setFont("Helvetica-Bold", 16)
     pdf.drawString(100, 800, f"Weekly Report for {request.user.username}")
     pdf.setFont("Helvetica", 10)
@@ -433,13 +350,19 @@ def generate_report_view(request):
             y -= 20
             pdf.drawString(120, y, f"Completed Tasks: {report.completed_tasks_count}")
             y -= 20
-            pdf.drawString(120, y, f"Completion Percentage: {report.completion_percentage:.2f}%")
+            pdf.drawString(
+                120, y, f"Completion Percentage: {report.completion_percentage:.2f}%"
+            )
             y -= 20
-            pdf.drawString(120, y, f"Start Date: {report.start_date.strftime('%Y-%m-%d')}")
-            pdf.drawString(120, y - 20, f"End Date: {report.end_date.strftime('%Y-%m-%d')}")
+            pdf.drawString(
+                120, y, f"Start Date: {report.start_date.strftime('%Y-%m-%d')}"
+            )
+            pdf.drawString(
+                120, y - 20, f"End Date: {report.end_date.strftime('%Y-%m-%d')}"
+            )
             y -= 40
 
-            if y < 100:  # Add a new page if space runs out
+            if y < 100:
                 pdf.showPage()
                 y = 750
     else:
@@ -449,7 +372,8 @@ def generate_report_view(request):
     pdf.save()
     buffer.seek(0)
 
-    # Step 4: Serve the PDF as a download
     response = HttpResponse(buffer, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=Weekly_Report_{request.user.username}.pdf'
+    response["Content-Disposition"] = (
+        f"attachment; filename=Weekly_Report_{request.user.username}.pdf"
+    )
     return response

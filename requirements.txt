@@ -1,7 +1,6 @@
 asgiref
 tailwind
 Django
-django-browser-reload
 sqlparse
 tzdata
 celery

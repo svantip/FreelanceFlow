@@ -6,25 +6,77 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Site Title{% endblock %}</title>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+    <!-- Tailwind -->
     <link rel="stylesheet" href="{% static 'output.css' %}" />
   </head>
   <body class="h-full bg-gray-100">
     <main class="min-h-screen flex flex-col">
       <!-- Top-left logo and Top-right navigation -->
-      <div class="flex justify-between items-center p-8">
+      <div class="flex flex-row justify-between items-center p-8 relative">
         <!-- Top-left logo -->
         <a href="{% url 'myapp:home' %}" class="flex items-center">
           <img src="{% static 'FF.png' %}" alt="FreelanceFlow Logo" class="h-10 w-auto" />
           <span class="ml-2 text-xl font-bold text-gray-800">FreelanceFlow</span>
         </a>
+
         <!-- Top-right navigation -->
-        <div>
+        <div class="flex items-center space-x-4">
           {% if user.is_authenticated %}
-          <div id="notification-inbox" class="w-64 bg-white p-4 rounded-lg shadow-lg">
-            <h2 class="text-lg font-bold mb-2">Notifications</h2>
-            <!-- Notifications will be appended here -->
+          <!-- Notifications Icon -->
+          <div class="relative">
+            <button
+              id="notifications-button"
+              class="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-gray-200 focus:outline-none"
+            >
+              <?xml version="1.0" ?><!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+              <svg
+                height="512px"
+                id="Layer_1"
+                style="enable-background: new 0 0 512 512"
+                version="1.1"
+                viewBox="0 0 512 512"
+                width="512px"
+                xml:space="preserve"
+                xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+              >
+                <g>
+                  <path
+                    d="M381.7,225.9c0-97.6-52.5-130.8-101.6-138.2c0-0.5,0.1-1,0.1-1.6c0-12.3-10.9-22.1-24.2-22.1c-13.3,0-23.8,9.8-23.8,22.1   c0,0.6,0,1.1,0.1,1.6c-49.2,7.5-102,40.8-102,138.4c0,113.8-28.3,126-66.3,158h384C410.2,352,381.7,339.7,381.7,225.9z"
+                  />
+                  <path
+                    d="M256.2,448c26.8,0,48.8-19.9,51.7-43H204.5C207.3,428.1,229.4,448,256.2,448z"
+                  />
+                </g>
+              </svg>
+              <span
+                id="notification-count"
+                class="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full"
+              >
+                0
+              </span>
+            </button>
+
+            <!-- Notifications Dropdown -->
+            <div
+              id="notifications-menu"
+              class="hidden absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border border-gray-200 z-50"
+            >
+              <ul class="divide-y divide-gray-200">
+                <li
+                  id="mark-all-read"
+                  class="hidden text-blue-500 text-sm p-3 hover:underline cursor-pointer"
+                >
+                  Mark All as Read
+                </li>
+              </ul>
+            </div>
           </div>
 
+          <!-- Username and Logout -->
           <p class="inline text-gray-800">Hello, {{ user.username }}!</p>
           <form action="{% url 'myapp:logout' %}" method="POST" class="inline">
             {% csrf_token %}
@@ -38,25 +90,85 @@
           {% endif %}
         </div>
       </div>
+
       {% block content %}
       <!-- Content goes here -->
       {% endblock content %}
     </main>
-  </body>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const socket = new WebSocket(`ws://${window.location.host}/ws/notifications/`);
 
-      socket.onmessage = (event) => {
+    <script>
+      let unreadCount = 0; // Track unread notifications
+
+      // WebSocket notification handling
+      const socket = new WebSocket("ws://127.0.0.1:9000/ws/notifications/");
+      socket.onmessage = function (event) {
         const data = JSON.parse(event.data);
-        const inbox = document.getElementById("notification-inbox");
+        let message = "";
 
-        // Add the new notification to the inbox
-        const notificationItem = document.createElement("div");
-        notificationItem.classList.add("p-2", "bg-gray-100", "rounded-lg", "shadow", "mb-2");
-        notificationItem.innerHTML = `<strong>${data.title}:</strong> ${data.body}`;
-        inbox.prepend(notificationItem);
+        if (data.event === "project_created") {
+          message = `Project Created: ${data.message}`;
+        } else if (data.event === "project_updated") {
+          message = `Project Updated: ${data.message}`;
+        } else if (data.event === "task_created") {
+          message = `Task Created: ${data.message}`;
+        } else if (data.event === "task_updated") {
+          message = `Task Updated: ${data.message}`;
+        }
+
+        if (message) {
+          const notificationsMenu = document.getElementById("notifications-menu");
+          const markAllReadButton = document.getElementById("mark-all-read");
+
+          // Create a new <li> element for the notification
+          const notificationItem = document.createElement("li");
+          notificationItem.setAttribute("role", "menuitem");
+          notificationItem.className =
+            "cursor-pointer text-gray-800 flex w-full text-sm items-center rounded-md p-3 transition-all hover:bg-gray-100";
+          notificationItem.textContent = message;
+
+          // Append the notification to the dropdown
+          notificationsMenu.appendChild(notificationItem);
+
+          // Increment unread notification count
+          unreadCount++;
+          updateNotificationCount();
+
+          // Show the "Mark All as Read" button
+          if (markAllReadButton.classList.contains("hidden")) {
+            markAllReadButton.classList.remove("hidden");
+          }
+        }
       };
-    });
-  </script>
+
+      // Update notification count on the icon
+      function updateNotificationCount() {
+        const countElement = document.getElementById("notification-count");
+        countElement.textContent = unreadCount;
+      }
+
+      // Toggle the visibility of the notifications dropdown
+      document.getElementById("notifications-button").addEventListener("click", function () {
+        const notificationsMenu = document.getElementById("notifications-menu");
+
+        // Toggle the `hidden` class on the dropdown menu
+        notificationsMenu.classList.toggle("hidden");
+      });
+
+      // Mark all notifications as read
+      document.getElementById("mark-all-read").addEventListener("click", function () {
+        const notificationsMenu = document.getElementById("notifications-menu");
+        const markAllReadButton = document.getElementById("mark-all-read");
+
+        // Clear all notifications from the dropdown
+        notificationsMenu.innerHTML = "";
+
+        // Reset unread count
+        unreadCount = 0;
+        updateNotificationCount();
+
+        // Hide the "Mark All as Read" button
+        markAllReadButton.classList.add("hidden");
+      });
+    </script>
+  </body>
 </html>
