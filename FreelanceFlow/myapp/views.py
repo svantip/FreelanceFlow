@@ -173,9 +173,10 @@ def project_details(request, pk):
         tasks = tasks.filter(task_status=task_status)
     if task_priority:
         tasks = tasks.filter(task_priority=task_priority)
-
+    users = project.viewers.all()
     context = {
         "project": project,
+        "users": users,
         "tasks": tasks,
         "query": query,
         "task_status": task_status,
